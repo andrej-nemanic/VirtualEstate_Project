@@ -20,6 +20,8 @@ kotlin {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation("com.fleeksoft.ksoup:ksoup:0.1.5")
+            implementation("com.fleeksoft.ksoup:ksoup-network:0.1.5")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
