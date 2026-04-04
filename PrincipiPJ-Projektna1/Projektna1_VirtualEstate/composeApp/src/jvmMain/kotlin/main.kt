@@ -4,16 +4,23 @@ import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.network.parseGetRequestBlocking
 import com.fleeksoft.ksoup.nodes.Document
 import com.fleeksoft.ksoup.nodes.Element
-import com.fleeksoft.ksoup.select.Elements
+import com.fleeksoft.ksoup.parser.Parser
 
 fun main() {
-    val doc: Document = Ksoup.parseGetRequestBlocking(url = "https://slo-tech.com/")
-    val allNews: Elements = doc.select(".news_item")
 
-    allNews.forEach { singleNews ->
-        val title = singleNews.select("h3 a").text()
-        val content = singleNews.select(".besediloNovice").text()
+    // Source 1: ARSO for weather data
+   val weatherDoc: Document = Ksoup.parseGetRequestBlocking(
+       url = "https://meteo.arso.gov.si/uploads/probase/www/observ/surface/text/sl/observation_si_latest.xml",
+       parser = Parser.xmlParser()
+   )
 
-        println("[$title] $content\n")
+    // Function saves data with select queries from weaterDoc XML document, then prints it
+    println("Weather: ")
+    weatherDoc.select("metData").forEach { station: Element ->
+        val name = station.select("domain_longTitle").text()
+        val temp = station.select("t").text()
+        val tempUnit = station.select("t_var_unit").text()
+        val shortDescription = station.select("nn_shortText").text()
+        println("$name | $temp $tempUnit | $shortDescription")
     }
 }
