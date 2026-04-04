@@ -23,4 +23,19 @@ fun main() {
         val shortDescription = station.select("nn_shortText").text()
         println("$name | $temp $tempUnit | $shortDescription")
     }
+
+    // Source 2: Register kulturne dediščine
+    val dediDoc: Document = Ksoup.parseGetRequestBlocking(
+        url = "https://podatki.gov.si/datastore/dump/aaebf650-5db0-4b5b-9e25-88bf32ff1eeb?format=xml&limit=10",
+        parser = Parser.xmlParser(),
+    )
+
+    println("\nKulturna dediscina:")
+    dediDoc.select("row").forEach { row ->
+        val ime = row.select("IME").text()
+        val obcina = row.select("OBCINA").text()
+        val tip = row.select("TIP").text()
+        val datacija = row.select("DATACIJA").text()
+        println("$ime | $obcina | $tip | $datacija")
+    }
 }
