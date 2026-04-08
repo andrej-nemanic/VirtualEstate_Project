@@ -20,7 +20,7 @@ fun main() {
             val vrsta = oglas.select("h2").text()
             val velikost = oglas.select("h3").text()
             val allText = oglas.text()
-            val cena = oglas.ownText().trim().ifEmpty {
+            val cena = oglas.ownText().trim().ifEmpty {git
                 oglas.select("*").lastOrNull()?.text()?.trim() ?: ""
             }
             val opis = allText
