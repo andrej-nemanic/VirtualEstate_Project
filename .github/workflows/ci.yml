@@ -2,18 +2,17 @@ name: CI/CD
 
 on:
   push:
-    branches: [develop, main]
+    branches: [devel, release]
   pull_request:
-    branches: [develop, main]
+    branches: [devel, release]
 
 env:
   PROJECT_DIR: PrincipiPJ-Projektna1/Projektna1_VirtualEstate
 
 jobs:
-  # ---------- BUILD + TEST (develop in main) ----------
+  # ---------- BUILD + TEST (devel in release) ----------
   build-and-test:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,11 +58,11 @@ jobs:
           path: ${{ env.PROJECT_DIR }}/**/build/test-results/test/TEST-*.xml
           reporter: java-junit
 
-  # ---------- PACKAGE + DEPLOY (samo main) ----------
+  # ---------- PACKAGE + DEPLOY (samo release) ----------
   package-and-deploy:
     runs-on: ubuntu-latest
     needs: build-and-test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/release' && github.event_name == 'push'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
