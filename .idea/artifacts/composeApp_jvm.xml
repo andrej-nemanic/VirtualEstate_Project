@@ -2,7 +2,7 @@
   <artifact type="jar" name="composeApp-jvm">
     <output-path>$PROJECT_DIR$/DesktopApplication/composeApp/build/libs</output-path>
     <root id="archive" name="composeApp-jvm.jar">
-      <element id="module-output" name="desktopapplication.composeApp.jvmMain" />
+      <element id="module-output" name="DesktopApplication.composeApp.jvmMain" />
     </root>
   </artifact>
 </component>
