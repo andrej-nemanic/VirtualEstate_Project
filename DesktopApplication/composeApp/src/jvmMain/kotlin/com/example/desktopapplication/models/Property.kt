@@ -3,7 +3,7 @@ package com.example.desktopapplication.models
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Nepremicnina(
+data class Property(
     val id: Int? = null,
     val address: String,
     val city: String,
