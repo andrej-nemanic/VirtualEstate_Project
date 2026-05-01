@@ -1,0 +1,19 @@
+.gradle/
+build/
+*.lock
+
+# IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Gradle
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+
+# OS
+.DS_Store
+Thumbs.db
