@@ -20,6 +20,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.Save
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 /**
  * Enumeration of all possible screens in the application.
  */
@@ -159,7 +165,7 @@ fun AppNavigation() {
     var currentScreen by remember { mutableStateOf(Screen.Dashboard) }
 
     // Začasni podatki za testiranje tabele
-    val dummyData = remember {
+    val database = remember {
         mutableStateListOf(
             Property(1, "Slovenska cesta 1", "Ljubljana", "Stanovanje", 50.0, 250000.0, 2020),
             Property(2, "Glavni trg 5", "Maribor", "Hiša", 120.0, 180000.0, 1995)
@@ -217,13 +223,23 @@ fun AppNavigation() {
                 when (currentScreen) {
                     Screen.Dashboard, Screen.Management -> {
                         DataTable(
-                            properties = dummyData,
-                            onDelete = { id -> dummyData.removeAll { it.id == id } },
+                            properties = database,
+                            onDelete = { id -> database.removeAll { it.id == id } },
                             onEdit = { /* TODO */ }
                         )
                     }
+                    Screen.WebSources -> {
+                        WebSourcesScreen(
+                            onSendToDatabase = { selected ->
+                                val nextId = (database.maxOfOrNull { it.id ?: 0 } ?: 0) + 1
+                                selected.forEachIndexed { i, p ->
+                                    database.add(p.copy(id = nextId + i))
+                                }
+                            }
+                        )
+                    }
                     else -> {
-                        Text("Vsebina za ${currentScreen.title} bo dodana v naslednjem koraku.")
+                        Text("Content for ${currentScreen.title} will be added in the next step.")
                     }
                 }
             }
@@ -259,5 +275,101 @@ fun NavigationItem(screen: Screen, isSelected: Boolean, onClick: () -> Unit) {
             fontSize = 16.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
         )
+    }
+}
+
+@Composable
+fun WebSourcesScreen(
+    onSendToDatabase: (List<Property>) -> Unit
+) {
+    var properties by remember { mutableStateOf<List<Property>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
+    var filterCity by remember { mutableStateOf("") }
+    var filterType by remember { mutableStateOf("") }
+    var selectedIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
+
+    val scope = rememberCoroutineScope()
+
+    val filtered = properties.filter { p ->
+        (filterCity.isBlank() || p.city.contains(filterCity, ignoreCase = true)) &&
+                (filterType.isBlank() || p.type.contains(filterType, ignoreCase = true))
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            ActionButton(
+                text = if (isLoading) "Loading..." else "Fetch data",
+                onClick = {
+                    isLoading = true
+                    scope.launch(Dispatchers.IO) {
+                        val data = WebScraper.scrapeAll()
+                        withContext(Dispatchers.Main) {
+                            properties = data.mapIndexed { i, p -> p.copy(id = i) }
+                            selectedIds = emptySet()
+                            isLoading = false
+                        }
+                    }
+                },
+                icon = Icons.Default.CloudDownload
+            )
+            ActionButton(
+                text = "Send selected to DB (${selectedIds.size})",
+                onClick = {
+                    val toSend = filtered.filter { it.id in selectedIds }
+                    onSendToDatabase(toSend)
+                    selectedIds = emptySet()
+                },
+                color = Color(0xFF27AE60),
+                icon = Icons.Default.Save
+            )
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            StyledTextField(filterCity, { filterCity = it }, "Filter by city", Modifier.weight(1f))
+            StyledTextField(filterType, { filterType = it }, "Filter by type", Modifier.weight(1f))
+        }
+
+        Card(elevation = 4.dp, modifier = Modifier.fillMaxSize()) {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth().background(Color(0xFFECF0F1)).padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("✓", modifier = Modifier.weight(0.3f), fontWeight = FontWeight.Bold)
+                    Text("Address", modifier = Modifier.weight(2f), fontWeight = FontWeight.Bold)
+                    Text("City", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                    Text("Price", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                    Text("Source", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                }
+                Divider()
+                LazyColumn {
+                    items(filtered) { property ->
+                        val checked = property.id in selectedIds
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .clickable {
+                                    selectedIds = if (checked)
+                                        selectedIds - (property.id ?: -1)
+                                    else
+                                        selectedIds + (property.id ?: -1)
+                                }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = checked,
+                                onCheckedChange = null,
+                                modifier = Modifier.weight(0.3f)
+                            )
+                            Text(property.address, modifier = Modifier.weight(2f))
+                            Text(property.city, modifier = Modifier.weight(1f))
+                            Text("${property.price} €", modifier = Modifier.weight(1f))
+                            Text(property.description ?: "", modifier = Modifier.weight(1f))
+                        }
+                        Divider()
+                    }
+                }
+            }
+        }
     }
 }

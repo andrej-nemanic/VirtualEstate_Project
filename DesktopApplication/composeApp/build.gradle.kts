@@ -42,6 +42,9 @@ kotlin {
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0")
             //Kotlin Faker
             implementation("io.github.serpro69:kotlin-faker:1.16.0")
+            //Ksoup za web scraping
+            implementation("com.fleeksoft.ksoup:ksoup:0.2.4")
+            implementation("com.fleeksoft.ksoup:ksoup-network:0.2.4")
         }
     }
 }
