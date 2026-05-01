@@ -298,7 +298,7 @@ fun WebSourcesScreen(
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             ActionButton(
-                text = if (isLoading) "Loading..." else "Fetch data",
+                text = if (isLoading) "Nalaganje..." else "Pridobi podatke",
                 onClick = {
                     isLoading = true
                     scope.launch(Dispatchers.IO) {
@@ -313,7 +313,7 @@ fun WebSourcesScreen(
                 icon = Icons.Default.CloudDownload
             )
             ActionButton(
-                text = "Send selected to DB (${selectedIds.size})",
+                text = "Pošlji v bazo (${selectedIds.size})",
                 onClick = {
                     val toSend = filtered.filter { it.id in selectedIds }
                     onSendToDatabase(toSend)
@@ -325,8 +325,8 @@ fun WebSourcesScreen(
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StyledTextField(filterCity, { filterCity = it }, "Filter by city", Modifier.weight(1f))
-            StyledTextField(filterType, { filterType = it }, "Filter by type", Modifier.weight(1f))
+            StyledTextField(filterCity, { filterCity = it }, "Filtriraj po mestu", Modifier.weight(1f))
+            StyledTextField(filterType, { filterType = it }, "Filtriraj po tipu", Modifier.weight(1f))
         }
 
         Card(elevation = 4.dp, modifier = Modifier.fillMaxSize()) {
@@ -336,10 +336,10 @@ fun WebSourcesScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("✓", modifier = Modifier.weight(0.3f), fontWeight = FontWeight.Bold)
-                    Text("Address", modifier = Modifier.weight(2f), fontWeight = FontWeight.Bold)
-                    Text("City", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                    Text("Price", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                    Text("Source", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                    Text("Naslov", modifier = Modifier.weight(2f), fontWeight = FontWeight.Bold)
+                    Text("Mesto", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                    Text("Cena", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                    Text("Vir", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
                 }
                 Divider()
                 LazyColumn {
