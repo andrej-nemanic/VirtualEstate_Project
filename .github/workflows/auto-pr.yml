@@ -1,0 +1,21 @@
+name: Auto Create Pull Request
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - develop
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: repo-sync/pull-request@v2
+        with:
+          destination_branch: "develop"
+          pr_title: "Auto PR: ${{ github.ref_name }} → develop"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
