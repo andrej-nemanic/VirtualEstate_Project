@@ -6,6 +6,8 @@
       <module name="desktopapplication.composeApp.jvmDev" target="24" />
       <module name="desktopapplication.composeApp.jvmMain" target="24" />
       <module name="desktopapplication.composeApp.jvmTest" target="24" />
+      <module name="DesktopApplication.main" target="17" />
+      <module name="DesktopApplication.test" target="17" />
     </bytecodeTargetLevel>
   </component>
 </project>

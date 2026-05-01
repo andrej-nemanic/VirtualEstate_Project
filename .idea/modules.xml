@@ -2,6 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/DesktopApplication/Projektna1_VirtualEstate.DesktopApplication.iml" filepath="$PROJECT_DIR$/.idea/modules/DesktopApplication/Projektna1_VirtualEstate.DesktopApplication.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/DesktopApplication/composeApp/Projektna1_VirtualEstate.DesktopApplication.composeApp.iml" filepath="$PROJECT_DIR$/.idea/modules/DesktopApplication/composeApp/Projektna1_VirtualEstate.DesktopApplication.composeApp.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/VirtualEstate.iml" filepath="$PROJECT_DIR$/.idea/VirtualEstate.iml" />
     </modules>
   </component>

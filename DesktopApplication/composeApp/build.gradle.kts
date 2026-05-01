@@ -29,6 +29,7 @@ kotlin {
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
+            implementation(compose.materialIconsExtended)
             //kotlin.serialization
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
             //Retrofit
