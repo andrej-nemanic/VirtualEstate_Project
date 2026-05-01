@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel>
+      <module name="desktopapplication.composeApp" target="24" />
+      <module name="desktopapplication.composeApp.jvmDev" target="24" />
+      <module name="desktopapplication.composeApp.jvmMain" target="24" />
+      <module name="desktopapplication.composeApp.jvmTest" target="24" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

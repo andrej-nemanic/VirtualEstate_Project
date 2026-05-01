@@ -9,7 +9,6 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$/DesktopApplication" />
-            <option value="$PROJECT_DIR$/DesktopApplication/composeApp" />
           </set>
         </option>
       </GradleProjectSettings>
