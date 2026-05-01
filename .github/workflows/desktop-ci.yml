@@ -19,4 +19,4 @@ jobs:
       - uses: gradle/actions/setup-gradle@v3
       - run: chmod +x gradlew
       - run: ./gradlew build --no-daemon
-      - run: ./gradlew test --no-daemon
+      - run: ./gradlew check --no-daemon
