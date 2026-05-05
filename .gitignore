@@ -17,3 +17,7 @@ gradle-app.setting
 # OS
 .DS_Store
 Thumbs.db
+
+# Word
+~$*.docx
+~WRL*.tmp
