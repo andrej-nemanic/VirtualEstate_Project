@@ -48,28 +48,6 @@ module.exports = {
     },
 
 
-    /*
-    var PropertySchema = new Schema({
-	'id' : Number,
-	'location' : {
-	 	type: Schema.Types.ObjectId,
-	 	ref: 'Location'
-	},
-	'type' : Object.freeze({
-		HOUSE: 'house',
-		APARTMENT: 'apartment',
-		LAND: 'land',
-		CONDOMINIUM: 'condominium'
-	}),
-	'size' : Number,
-	'price' : Number,
-	'buildYear' : Number,
-	'description' : String,
-	'pictures' : Array,
-	'dateOfPosting' : Date,
-	'propertyLink' : String
-});
-    */
 
 
     /**
