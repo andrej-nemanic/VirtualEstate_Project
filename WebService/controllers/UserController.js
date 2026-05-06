@@ -1,4 +1,6 @@
 var UserModel = require('../models/UserModel.js');
+var jwt = require('jsonwebtoken');
+var bcrypt = require('bcrypt');
 
 /**
  * UserController.js
@@ -127,6 +129,40 @@ module.exports = {
             }
 
             return res.status(204).json();
+        });
+    },
+    /**
+     * UserController.login()
+     */
+    login: function (req, res) {
+        var email = req.body.email;
+        var password = req.body.password;
+
+        // Poiščemo uporabnika po e-pošti
+        UserModel.findOne({ email: email }, function (err, User) {
+            if (err) {
+                return res.status(500).json({ message: 'Napaka pri iskanju uporabnika.', error: err });
+            }
+            if (!User) {
+                return res.status(401).json({ message: 'Napačna e-pošta ali geslo.' });
+            }
+
+            // Preverimo geslo
+            User.comparePassword(password, function(err, isMatch) {
+                if (err || !isMatch) {
+                    return res.status(401).json({ message: 'Napačna e-pošta ali geslo.' });
+                }
+
+                // Generiramo JWT žeton (veljavnost npr. 1 uro)
+                // OPOMBA: V produkciji 'skrivniKljuc' prenesite v okoljske spremenljivke (.env datoteka)
+                var token = jwt.sign({ id: User._id, email: User.email, type: User.type }, 'skrivniKljuc', { expiresIn: '1h' });
+
+                return res.json({
+                    message: 'Uspešna prijava',
+                    token: token,
+                    user: { id: User._id, name: User.name, type: User.type }
+                });
+            });
         });
     }
 };
