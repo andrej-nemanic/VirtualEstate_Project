@@ -52,7 +52,10 @@ module.exports = {
      */
     create: function (req, res) {
         var Location = new LocationModel({
-			Coordinates : req.body.Coordinates,
+			location : {
+                type: 'Point',
+                coordinates: req.body.Coordinates
+            },
             address : req.body.address,
             city : req.body.city
         });
@@ -89,7 +92,10 @@ module.exports = {
                 });
             }
 
-            Location.Coordinates = req.body.Coordinates ? req.body.Coordinates : Location.Coordinates;
+            Location.location = req.body.Coordinates ? {
+                type: 'Point',
+                coordinates: req.body.Coordinates
+            } : Location.location;
 			Location.address = req.body.address ? req.body.address : Location.address;
 			Location.city = req.body.city ? req.body.city : Location.city;
 			

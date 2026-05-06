@@ -2,7 +2,10 @@ var mongoose = require('mongoose');
 var Schema   = mongoose.Schema;
 
 var LocationSchema = new Schema({
-	'Coordinates' : Array,
+	'location' : {
+        type: { type: String, enum: ['Point'], default: 'Point' },
+        coordinates: { type: [Number], required: true } // [longitude, latitude]
+    },
 	'address' : String,
 	'city' : String
 });

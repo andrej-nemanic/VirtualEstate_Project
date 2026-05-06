@@ -1,30 +1,32 @@
 var express = require('express');
 var router = express.Router();
 var PropertyController = require('../controllers/PropertyController.js');
+var authMiddleware = require('../middleware/authMiddleware.js');
+
 
 /*
  * GET
  */
-router.get('/', PropertyController.list);
+router.get('/', authMiddleware, PropertyController.list);
 
 /*
  * GET
  */
-router.get('/:id', PropertyController.show);
+router.get('/:id', authMiddleware, PropertyController.show);
 
 /*
  * POST
  */
-router.post('/', PropertyController.create);
+router.post('/', authMiddleware, PropertyController.create);
 
 /*
  * PUT
  */
-router.put('/:id', PropertyController.update);
+router.put('/:id', authMiddleware, PropertyController.update);
 
 /*
  * DELETE
  */
-router.delete('/:id', PropertyController.remove);
+router.delete('/:id', authMiddleware, PropertyController.remove);
 
 module.exports = router;
