@@ -4,6 +4,11 @@ var PropertyController = require('../controllers/PropertyController.js');
 var authMiddleware = require('../middleware/authMiddleware.js');
 
 
+
+/*
+ * GET - Iskanje po lokaciji
+ */
+router.get('/search', PropertyController.searchByDistance);
 /*
  * GET
  */

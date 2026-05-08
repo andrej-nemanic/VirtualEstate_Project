@@ -1,5 +1,6 @@
 var mongoose = require('mongoose');
 var Schema   = mongoose.Schema;
+var bcrypt = require('bcrypt');
 
 var UserSchema = new Schema({
 	'id' : Number,
@@ -7,10 +8,11 @@ var UserSchema = new Schema({
 	'personalData' : Array,
 	'email' : String,
 	'password' : String,
-	'type' : Object.freeze({
-		OWNER: 'owner',
-		BUYER: 'buyer'
-	})
+    'type' : {
+        type: String,
+        enum: ['owner', 'buyer'],
+        default: 'buyer'
+    }
 });
 
 // Funkcija pred shranjevanjem - šifriranje gesla

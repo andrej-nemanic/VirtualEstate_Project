@@ -6,7 +6,23 @@ var LocationModel = require('../models/LocationModel.js');
  * @description :: Server-side logic for managing Locations.
  */
 module.exports = {
+        // Iskanje lokacij v bližini (npr. v radiju 5km)
+    near: function (req, res) {
+        var lat = parseFloat(req.query.lat);
+        var lng = parseFloat(req.query.lng);
 
+        LocationModel.find({
+            location: {
+                $near: {
+                    $geometry: { type: "Point", coordinates: [lng, lat] },
+                    $maxDistance: 5000 // metri
+                    }
+                }
+            }, function (err, locations) {
+                if (err) return res.status(500).json(err);
+                return res.json(locations);
+            });
+        },
     /**
      * LocationController.list()
      */

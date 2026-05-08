@@ -4,10 +4,16 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
+
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var locationsRouter = require('./routes/LocationRoutes');
+var propertiesRouter = require('./routes/PropertyRoutes');
 
 var app = express();
+var http = require('http').Server(app);
+var io = require('socket.io')();
+app.set('io', io);
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -21,10 +27,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/properties', propertiesRouter);
+app.use('/locations', locationsRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
+
 });
 
 // error handler
@@ -37,5 +46,18 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
+io.on('connection', function(socket){
+  console.log('Uporabnik povezan na digitalnega dvojčka');
+  
+  socket.on('property_update', function(msg){
+    // Obvestimo vse ostale o spremembi na nepremičnini
+    io.emit('update_ui', msg);
+  });
+});
+
+/*http.listen(3000, function(){
+  console.log('The Web Service is listening on port 3000');
+});*/
 
 module.exports = app;

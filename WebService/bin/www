@@ -20,7 +20,11 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
-
+var io = app.get('io');
+if (io) {
+    io.attach(server);
+    console.log('Socket.io successfully attached to the server.');
+}
 /**
  * Listen on provided port, on all network interfaces.
  */

@@ -1,18 +1,24 @@
 var mongoose = require('mongoose');
 var Schema   = mongoose.Schema;
 
+const PropertyTypes = {
+    HOUSE: 'house',
+    APARTMENT: 'apartment',
+    LAND: 'land',
+    CONDOMINIUM: 'condominium'
+};
+
 var PropertySchema = new Schema({
 	'id' : Number,
 	'location' : {
 	 	type: Schema.Types.ObjectId,
 	 	ref: 'Location'
 	},
-	'type' : Object.freeze({
-		HOUSE: 'house',
-		APARTMENT: 'apartment',
-		LAND: 'land',
-		CONDOMINIUM: 'condominium'
-	}),
+	'type' : {
+        type: String,
+        enum: Object.values(PropertyTypes),
+        required: true
+    },
 	'size' : Number,
 	'price' : Number,
 	'buildYear' : Number,
