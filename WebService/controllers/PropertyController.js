@@ -1,5 +1,5 @@
 var PropertyModel = require('../models/PropertyModel.js');
-
+var LocationModel = require('../models/LocationModel.js');
 /**
  * PropertyController.js
  *
@@ -77,6 +77,9 @@ module.exports = {
 
             return res.status(201).json(Property);
         });
+
+        const io = req.app.get('io');
+        io.emit('property_update', { action: 'A new property has been added!', propertyId: Property._id });
     },
 
     /**
@@ -139,5 +142,37 @@ module.exports = {
 
             return res.status(204).json();
         });
-    }
+    },
+    
+    searchByDistance: function (req, res) {
+        var lat = parseFloat(req.query.lat);
+        var lng = parseFloat(req.query.lng);
+        var dist = parseFloat(req.query.dist) || 5000; // privzeto 5km
+
+        if (!lat || !lng) {
+            return res.status(400).json({ message: 'Manjkajo parametri lat in lng.' });
+        }
+
+        // 1. Najprej poiščemo ID-je lokacij, ki so v bližini
+        LocationModel.find({
+            location: {
+                $near: {
+                    $geometry: { type: "Point", coordinates: [lng, lat] },
+                    $maxDistance: dist
+                }
+            }
+        }, function (err, locations) {
+            if (err) return res.status(500).json(err);
+
+            var locationIds = locations.map(loc => loc._id);
+
+            // 2. Nato poiščemo nepremičnine, ki se nahajajo na teh lokacijah
+            PropertyModel.find({ location: { $in: locationIds } })
+                .populate('location') // Pridruži podatke o lokaciji (naslov, mesto)
+                .exec(function (err, properties) {
+                    if (err) return res.status(500).json(err);
+                    return res.json(properties);
+                });
+        });
+    },
 };

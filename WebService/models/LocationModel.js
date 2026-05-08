@@ -10,4 +10,6 @@ var LocationSchema = new Schema({
 	'city' : String
 });
 
+LocationSchema.index({ location: "2dsphere" });
+
 module.exports = mongoose.model('Location', LocationSchema);
