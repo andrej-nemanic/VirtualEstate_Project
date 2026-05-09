@@ -5,27 +5,25 @@ import com.example.desktopapplication.models.Property
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.Save
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
 /**
  * Enumeration of all possible screens in the application.
  */
@@ -35,6 +33,7 @@ enum class Screen(val title: String, val icon: ImageVector) {
     WebSources("Spletni viri", Icons.Default.CloudDownload),
     Generator("Generator podatkov", Icons.Default.Build)
 }
+
 @Composable
 fun StyledTextField(
     value: String,
@@ -81,7 +80,6 @@ fun DataTable(
 ) {
     Card(elevation = 4.dp, modifier = Modifier.fillMaxSize()) {
         Column {
-            // Header
             Row(
                 modifier = Modifier.fillMaxWidth().background(Color(0xFFECF0F1)).padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -92,8 +90,6 @@ fun DataTable(
                 Text("Akcije", modifier = Modifier.weight(0.8f), fontWeight = FontWeight.Bold)
             }
             Divider()
-
-            // Rows
             LazyColumn {
                 items(properties) { property ->
                     Row(
@@ -103,7 +99,6 @@ fun DataTable(
                         Text(property.address, modifier = Modifier.weight(2f))
                         Text(property.city, modifier = Modifier.weight(1f))
                         Text("${property.price} €", modifier = Modifier.weight(1f))
-
                         Row(modifier = Modifier.weight(0.8f)) {
                             IconButton(onClick = { onEdit(property) }) {
                                 Icon(Icons.Default.Edit, "Uredi", tint = Color(0xFFF39C12))
@@ -160,11 +155,11 @@ fun PropertyEditDialog(
         }
     )
 }
+
 @Composable
 fun AppNavigation() {
     var currentScreen by remember { mutableStateOf(Screen.Dashboard) }
 
-    // Začasni podatki za testiranje tabele
     val database = remember {
         mutableStateListOf(
             Property(1, "Slovenska cesta 1", "Ljubljana", "Stanovanje", 50.0, 250000.0, 2020),
@@ -188,9 +183,7 @@ fun AppNavigation() {
                 fontWeight = FontWeight.ExtraBold,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp)
             )
-
             Spacer(modifier = Modifier.height(20.dp))
-
             Screen.values().forEach { screen ->
                 NavigationItem(
                     screen = screen,
@@ -214,7 +207,6 @@ fun AppNavigation() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(currentScreen.title, style = MaterialTheme.typography.h4, fontWeight = FontWeight.Bold)
-
                     if (currentScreen == Screen.Management) {
                         ActionButton("Dodaj Novo", onClick = { /* TODO: Odpri dialog */ }, icon = Icons.Default.Add)
                     }
@@ -238,8 +230,15 @@ fun AppNavigation() {
                             }
                         )
                     }
-                    else -> {
-                        Text("Content for ${currentScreen.title} will be added in the next step.")
+                    Screen.Generator -> {
+                        GeneratorScreen(
+                            onSendToDatabase = { selected ->
+                                val nextId = (database.maxOfOrNull { it.id ?: 0 } ?: 0) + 1
+                                selected.forEachIndexed { i, p ->
+                                    database.add(p.copy(id = nextId + i))
+                                }
+                            }
+                        )
                     }
                 }
             }
@@ -279,9 +278,7 @@ fun NavigationItem(screen: Screen, isSelected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun WebSourcesScreen(
-    onSendToDatabase: (List<Property>) -> Unit
-) {
+fun WebSourcesScreen(onSendToDatabase: (List<Property>) -> Unit) {
     var properties by remember { mutableStateOf<List<Property>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var filterCity by remember { mutableStateOf("") }
@@ -367,6 +364,108 @@ fun WebSourcesScreen(
                             Text(property.description ?: "", modifier = Modifier.weight(1f))
                         }
                         Divider()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun GeneratorScreen(onSendToDatabase: (List<Property>) -> Unit) {
+    var count by remember { mutableStateOf("10") }
+    var priceMin by remember { mutableStateOf("50000") }
+    var priceMax by remember { mutableStateOf("500000") }
+    var sizeMin by remember { mutableStateOf("30") }
+    var sizeMax by remember { mutableStateOf("200") }
+    var yearMin by remember { mutableStateOf("1950") }
+    var yearMax by remember { mutableStateOf("2024") }
+
+    var generated by remember { mutableStateOf<List<Property>>(emptyList()) }
+    var selectedIds by remember { mutableStateOf<Set<Int>>(emptySet()) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Card(elevation = 4.dp) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Parametri generiranja", fontWeight = FontWeight.Bold)
+                StyledTextField(count, { count = it }, "Število zapisov")
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    StyledTextField(priceMin, { priceMin = it }, "Cena min (€)", Modifier.weight(1f))
+                    StyledTextField(priceMax, { priceMax = it }, "Cena max (€)", Modifier.weight(1f))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    StyledTextField(sizeMin, { sizeMin = it }, "Velikost min (m²)", Modifier.weight(1f))
+                    StyledTextField(sizeMax, { sizeMax = it }, "Velikost max (m²)", Modifier.weight(1f))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    StyledTextField(yearMin, { yearMin = it }, "Leto min", Modifier.weight(1f))
+                    StyledTextField(yearMax, { yearMax = it }, "Leto max", Modifier.weight(1f))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ActionButton(
+                        text = "Generiraj",
+                        onClick = {
+                            generated = DataGenerator.generate(
+                                count = count.toIntOrNull() ?: 10,
+                                priceRange = (priceMin.toIntOrNull() ?: 50000)..(priceMax.toIntOrNull() ?: 500000),
+                                sizeRange = (sizeMin.toIntOrNull() ?: 30)..(sizeMax.toIntOrNull() ?: 200),
+                                yearRange = (yearMin.toIntOrNull() ?: 1950)..(yearMax.toIntOrNull() ?: 2024)
+                            )
+                            selectedIds = generated.mapNotNull { it.id }.toSet()
+                        },
+                        icon = Icons.Default.Casino
+                    )
+                    ActionButton(
+                        text = "Pošlji v bazo (${selectedIds.size})",
+                        onClick = {
+                            onSendToDatabase(generated.filter { it.id in selectedIds })
+                            generated = emptyList()
+                            selectedIds = emptySet()
+                        },
+                        color = Color(0xFF27AE60),
+                        icon = Icons.Default.Save
+                    )
+                }
+            }
+        }
+
+        if (generated.isNotEmpty()) {
+            Card(elevation = 4.dp, modifier = Modifier.fillMaxSize()) {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().background(Color(0xFFECF0F1)).padding(12.dp)
+                    ) {
+                        Text("✓", modifier = Modifier.weight(0.3f), fontWeight = FontWeight.Bold)
+                        Text("Naslov", modifier = Modifier.weight(2f), fontWeight = FontWeight.Bold)
+                        Text("Mesto", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                        Text("Tip", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                        Text("m²", modifier = Modifier.weight(0.7f), fontWeight = FontWeight.Bold)
+                        Text("Cena", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                        Text("Leto", modifier = Modifier.weight(0.7f), fontWeight = FontWeight.Bold)
+                    }
+                    Divider()
+                    LazyColumn {
+                        items(generated) { p ->
+                            val checked = p.id in selectedIds
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .clickable {
+                                        selectedIds = if (checked) selectedIds - (p.id ?: -1)
+                                        else selectedIds + (p.id ?: -1)
+                                    }
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(checked = checked, onCheckedChange = null, modifier = Modifier.weight(0.3f))
+                                Text(p.address, modifier = Modifier.weight(2f))
+                                Text(p.city, modifier = Modifier.weight(1f))
+                                Text(p.type, modifier = Modifier.weight(1f))
+                                Text("${p.size.toInt()}", modifier = Modifier.weight(0.7f))
+                                Text("${p.price.toInt()} €", modifier = Modifier.weight(1f))
+                                Text("${p.buildYear}", modifier = Modifier.weight(0.7f))
+                            }
+                            Divider()
+                        }
                     }
                 }
             }
