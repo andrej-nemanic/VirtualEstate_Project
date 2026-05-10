@@ -3,29 +3,31 @@ var router = express.Router();
 var UserController = require('../controllers/UserController.js');
 var authMiddleware = require('../middleware/authMiddleware.js');
 
+router.post('/login', UserController.login);
 /*
  * GET
  */
-router.get('/', UserController.list);
+router.get('/', authMiddleware, UserController.list);
 
 /*
  * GET
  */
-router.get('/:id', UserController.show);
-router.post('/login', authMiddleware, UserController.login);
+router.get('/:id', authMiddleware, UserController.show);
+
 /*
  * POST
  */
+//Register route
 router.post('/', UserController.create);
 
 /*
  * PUT
  */
-router.put('/:id', UserController.update);
+router.put('/:id', authMiddleware, UserController.update);
 
 /*
  * DELETE
  */
-router.delete('/:id', UserController.remove);
+router.delete('/:id', authMiddleware, UserController.remove);
 
 module.exports = router;

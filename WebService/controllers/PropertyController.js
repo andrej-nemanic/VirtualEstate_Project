@@ -6,13 +6,13 @@ var PropertyModel = require('../models/PropertyModel.js');
  * @description :: Server-side logic for managing Propertys.
  */
 module.exports = {
-
     /**
      * PropertyController.list()
      */
     list: function (req, res) {
-        PropertyModel.find(function (err, Propertys) {
+        PropertyModel.find.populate('location').exec(function (err, Propertys) {
             if (err) {
+                console.error("Napaka pri populaciji:", err);
                 return res.status(500).json({
                     message: 'Error when getting Property.',
                     error: err
@@ -66,12 +66,16 @@ module.exports = {
             dateOfPosting : req.body.dateOfPosting,
             propertyLink : req.body.propertyLink
         });
-
+        
         Property.save(function (err, Property) {
             if (err) {
-                return res.status(500).json({
-                    message: 'Error when creating Property',
-                    error: err
+                return res.status(500).json({ message: 'Error when creating Property', error: err });
+            }
+            
+            const io = req.app.get('socketio');
+            if (io) {
+                PropertyModel.findById(Property._id).populate('location').exec((err, populatedProp) => {
+                    io.emit('propertyCreated', populatedProp);
                 });
             }
 

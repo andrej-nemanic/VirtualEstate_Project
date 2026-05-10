@@ -7,12 +7,11 @@ var PropertySchema = new Schema({
 	 	type: Schema.Types.ObjectId,
 	 	ref: 'Location'
 	},
-	'type' : Object.freeze({
-		HOUSE: 'house',
-		APARTMENT: 'apartment',
-		LAND: 'land',
-		CONDOMINIUM: 'condominium'
-	}),
+	'type' : {
+        type: String,
+        enum: ['house', 'apartment', 'land', 'condominium'],
+        default: 'house'
+    },
 	'size' : Number,
 	'price' : Number,
 	'buildYear' : Number,
