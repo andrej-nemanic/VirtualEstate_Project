@@ -1,6 +1,13 @@
 var mongoose = require('mongoose');
 var Schema   = mongoose.Schema;
 
+const PropertyTypes = {
+    HOUSE: 'house',
+    APARTMENT: 'apartment',
+    LAND: 'land',
+    CONDOMINIUM: 'condominium'
+};
+
 var PropertySchema = new Schema({
 	'id' : Number,
 	'location' : {

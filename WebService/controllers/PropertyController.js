@@ -1,5 +1,5 @@
 var PropertyModel = require('../models/PropertyModel.js');
-
+var LocationModel = require('../models/LocationModel.js');
 /**
  * PropertyController.js
  *
