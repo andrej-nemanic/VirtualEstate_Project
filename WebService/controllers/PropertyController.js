@@ -65,7 +65,19 @@ module.exports = {
 
         try {
             var savedProperty = await Property.save();
-            return res.status(201).json(savedProperty);
+            
+            // POPRAVLJENO: Pred oddajanjem preko Web Socketov moramo populirati lokacijo,
+            // da odjemalec dobi GeoJSON koordinate za takojšen izris na Leaflet zemljevidu.
+            const populatedProperty = await PropertyModel.findById(savedProperty._id)
+                                                         .populate('location')
+                                                         .exec();
+            
+            // PROŽENJE REALNOČASOVNEGA DOGODKA
+            if (req.io) {
+                req.io.emit('propertyCreated', populatedProperty);
+            }
+
+            return res.status(201).json(populatedProperty);
         } catch (err) {
             return res.status(500).json({
                 message: 'Error when creating Property',
