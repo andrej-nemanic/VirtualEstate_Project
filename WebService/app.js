@@ -1,21 +1,24 @@
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
+var mongoose = require('mongoose');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-
+// Uvoz usmerjevalnikov
 var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
-var locationsRouter = require('./routes/LocationRoutes');
-var propertiesRouter = require('./routes/PropertyRoutes');
+// POPRAVLJENO: Namesto privzete 'users.js' uvozimo vaše dejanske poti 'UserRoutes.js'
+var userRoutes = require('./routes/UserRoutes'); 
+
+// Povezava na MongoDB
+mongoose.connect('mongodb://127.0.0.1:27017/virtual_estate');
 
 var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')();
 app.set('io', io);
 
-// view engine setup
+// View engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
 
@@ -25,18 +28,18 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Vpetje poti
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
-app.use('/properties', propertiesRouter);
-app.use('/locations', locationsRouter);
+// POPRAVLJENO: Preusmeritev celotnega /users prometa na vaš UserRoutes vmesnik
+app.use('/users', userRoutes); 
 
-// catch 404 and forward to error handler
+// Catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
 
 });
 
-// error handler
+// Error handler
 app.use(function(err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
@@ -46,18 +49,5 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
-
-io.on('connection', function(socket){
-  console.log('Uporabnik povezan na digitalnega dvojčka');
-  
-  socket.on('property_update', function(msg){
-    // Obvestimo vse ostale o spremembi na nepremičnini
-    io.emit('update_ui', msg);
-  });
-});
-
-/*http.listen(3000, function(){
-  console.log('The Web Service is listening on port 3000');
-});*/
 
 module.exports = app;

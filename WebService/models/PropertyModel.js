@@ -16,8 +16,8 @@ var PropertySchema = new Schema({
 	},
 	'type' : {
         type: String,
-        enum: Object.values(PropertyTypes),
-        required: true
+        enum: ['house', 'apartment', 'land', 'condominium'],
+        default: 'house'
     },
 	'size' : Number,
 	'price' : Number,

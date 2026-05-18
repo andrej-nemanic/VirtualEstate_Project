@@ -16,16 +16,20 @@ var UserSchema = new Schema({
 });
 
 // Funkcija pred shranjevanjem - šifriranje gesla
-UserSchema.pre('save', function(next) {
+UserSchema.pre('save', async function() {
     var user = this;
-    // Šifriraj le, če je geslo novo ali spremenjeno
-    if (!user.isModified('password')) return next();
+    
+    // Če geslo ni bilo spremenjeno, preprosto prekinemo izvajanje (enako kot včasih next())
+    if (!user.isModified('password')) return;
 
-    bcrypt.hash(user.password, 10, function(err, hash) {
-        if (err) return next(err);
+    try {
+        // Uporabimo bcrypt asinhrono z await, kar je standard za novejši Node.js
+        const hash = await bcrypt.hash(user.password, 10);
         user.password = hash;
-        next();
-    });
+    } catch (err) {
+        // Če pride do napake pri šifriranju, jo vržemo naprej, da jo Mongoose uname
+        throw err;
+    }
 });
 
 // Metoda za preverjanje gesla
