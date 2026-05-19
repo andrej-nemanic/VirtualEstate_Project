@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Property(
     val id: Int? = null,
+    val apiId: String? = null,
     val address: String,
     val city: String,
     val type: String,

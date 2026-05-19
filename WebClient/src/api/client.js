@@ -40,13 +40,4 @@ export const propertyApi = {
   search: (lat, lng, distance) => client.get('/properties/search', { params: { lat, lng, distance } })
 };
 
-export const locationApi = {
-  list: () => client.get('/locations'),
-  get: (id) => client.get(`/locations/${id}`),
-  create: (data) => client.post('/locations', data),
-  update: (id, data) => client.put(`/locations/${id}`, data),
-  remove: (id) => client.delete(`/locations/${id}`),
-  near: (lat, lng, distance) => client.get('/locations/near', { params: { lat, lng, distance } })
-};
-
 export default client;

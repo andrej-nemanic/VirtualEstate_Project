@@ -1,6 +1,8 @@
 package com.example.desktopapplication
 
 import com.example.desktopapplication.models.Property
+import com.example.desktopapplication.models.PropertyMapper
+import com.example.desktopapplication.network.ApiClient
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,13 +22,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/**
- * Enumeration of all possible screens in the application.
- */
 enum class Screen(val title: String, val icon: ImageVector) {
     Dashboard("Pregled podatkov", Icons.Default.List),
     Management("Upravljanje (CRUD)", Icons.Default.Edit),
@@ -56,13 +56,15 @@ fun ActionButton(
     text: String,
     onClick: () -> Unit,
     color: Color = Color(0xFF2980B9),
-    icon: ImageVector? = null
+    icon: ImageVector? = null,
+    enabled: Boolean = true
 ) {
     Button(
         onClick = onClick,
         colors = ButtonDefaults.buttonColors(backgroundColor = color),
         shape = RoundedCornerShape(8.dp),
-        modifier = Modifier.height(45.dp)
+        modifier = Modifier.height(45.dp),
+        enabled = enabled
     ) {
         if (icon != null) {
             Icon(icon, contentDescription = null, tint = Color.White)
@@ -75,8 +77,9 @@ fun ActionButton(
 @Composable
 fun DataTable(
     properties: List<Property>,
-    onDelete: (Int) -> Unit,
-    onEdit: (Property) -> Unit
+    onDelete: (Property) -> Unit,
+    onEdit: (Property) -> Unit,
+    readOnly: Boolean = false
 ) {
     Card(elevation = 4.dp, modifier = Modifier.fillMaxSize()) {
         Column {
@@ -86,8 +89,11 @@ fun DataTable(
             ) {
                 Text("Naslov", modifier = Modifier.weight(2f), fontWeight = FontWeight.Bold)
                 Text("Mesto", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                Text("Tip", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
                 Text("Cena", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                Text("Akcije", modifier = Modifier.weight(0.8f), fontWeight = FontWeight.Bold)
+                if (!readOnly) {
+                    Text("Akcije", modifier = Modifier.weight(0.8f), fontWeight = FontWeight.Bold)
+                }
             }
             Divider()
             LazyColumn {
@@ -98,13 +104,16 @@ fun DataTable(
                     ) {
                         Text(property.address, modifier = Modifier.weight(2f))
                         Text(property.city, modifier = Modifier.weight(1f))
+                        Text(property.type, modifier = Modifier.weight(1f))
                         Text("${property.price} €", modifier = Modifier.weight(1f))
-                        Row(modifier = Modifier.weight(0.8f)) {
-                            IconButton(onClick = { onEdit(property) }) {
-                                Icon(Icons.Default.Edit, "Uredi", tint = Color(0xFFF39C12))
-                            }
-                            IconButton(onClick = { property.id?.let { onDelete(it) } }) {
-                                Icon(Icons.Default.Delete, "Izbriši", tint = Color(0xFFC0392B))
+                        if (!readOnly) {
+                            Row(modifier = Modifier.weight(0.8f)) {
+                                IconButton(onClick = { onEdit(property) }) {
+                                    Icon(Icons.Default.Edit, "Uredi", tint = Color(0xFFF39C12))
+                                }
+                                IconButton(onClick = { onDelete(property) }) {
+                                    Icon(Icons.Default.Delete, "Izbriši", tint = Color(0xFFC0392B))
+                                }
                             }
                         }
                     }
@@ -123,7 +132,10 @@ fun PropertyEditDialog(
 ) {
     var address by remember { mutableStateOf(property?.address ?: "") }
     var city by remember { mutableStateOf(property?.city ?: "") }
+    var type by remember { mutableStateOf(property?.type ?: "Stanovanje") }
+    var size by remember { mutableStateOf(property?.size?.toString() ?: "0") }
     var price by remember { mutableStateOf(property?.price?.toString() ?: "") }
+    var buildYear by remember { mutableStateOf(property?.buildYear?.toString() ?: "2024") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -132,7 +144,10 @@ fun PropertyEditDialog(
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 StyledTextField(address, { address = it }, "Naslov")
                 StyledTextField(city, { city = it }, "Mesto")
+                StyledTextField(type, { type = it }, "Tip (Stanovanje/Hiša/Zemljišče)")
+                StyledTextField(size, { size = it }, "Velikost (m²)")
                 StyledTextField(price, { price = it }, "Cena (€)")
+                StyledTextField(buildYear, { buildYear = it }, "Leto izgradnje")
             }
         },
         confirmButton = {
@@ -140,12 +155,14 @@ fun PropertyEditDialog(
                 onConfirm(
                     Property(
                         id = property?.id,
+                        apiId = property?.apiId,
                         address = address,
                         city = city,
-                        type = property?.type ?: "Stanovanje",
-                        size = property?.size ?: 0.0,
+                        type = type,
+                        size = size.toDoubleOrNull() ?: 0.0,
                         price = price.toDoubleOrNull() ?: 0.0,
-                        buildYear = property?.buildYear ?: 2024
+                        buildYear = buildYear.toIntOrNull() ?: 2024,
+                        description = property?.description
                     )
                 )
             }) { Text("Shrani") }
@@ -156,19 +173,68 @@ fun PropertyEditDialog(
     )
 }
 
+private fun CoroutineScope.refreshProperties(
+    onStart: () -> Unit,
+    onResult: (List<Property>, String?) -> Unit
+) {
+    onStart()
+    launch(Dispatchers.IO) {
+        val (data, error) = try {
+            ApiClient.properties.list().mapIndexed { i, dto ->
+                PropertyMapper.fromResponse(dto, i + 1)
+            } to null
+        } catch (e: Exception) {
+            emptyList<Property>() to (e.message ?: "Napaka pri nalaganju")
+        }
+        withContext(Dispatchers.Main) { onResult(data, error) }
+    }
+}
+
+private fun CoroutineScope.ingestAll(
+    properties: List<Property>,
+    onDone: (Int, String?) -> Unit
+) {
+    launch(Dispatchers.IO) {
+        var saved = 0
+        var lastError: String? = null
+        for (p in properties) {
+            try {
+                ApiClient.properties.create(PropertyMapper.toIngest(p))
+                saved++
+            } catch (e: Exception) {
+                lastError = e.message ?: "Napaka pri pošiljanju"
+            }
+        }
+        withContext(Dispatchers.Main) { onDone(saved, lastError) }
+    }
+}
+
 @Composable
 fun AppNavigation() {
     var currentScreen by remember { mutableStateOf(Screen.Dashboard) }
+    val database = remember { mutableStateListOf<Property>() }
+    var isLoading by remember { mutableStateOf(false) }
+    var statusMessage by remember { mutableStateOf<String?>(null) }
+    var editingProperty by remember { mutableStateOf<Property?>(null) }
+    var showAddDialog by remember { mutableStateOf(false) }
 
-    val database = remember {
-        mutableStateListOf(
-            Property(1, "Slovenska cesta 1", "Ljubljana", "Stanovanje", 50.0, 250000.0, 2020),
-            Property(2, "Glavni trg 5", "Maribor", "Hiša", 120.0, 180000.0, 1995)
+    val scope = rememberCoroutineScope()
+
+    fun reload() {
+        scope.refreshProperties(
+            onStart = { isLoading = true; statusMessage = null },
+            onResult = { data, err ->
+                database.clear()
+                database.addAll(data)
+                isLoading = false
+                statusMessage = err?.let { "Napaka: $it" }
+            }
         )
     }
 
+    LaunchedEffect(Unit) { reload() }
+
     Row(modifier = Modifier.fillMaxSize()) {
-        // SIDEBAR
         Column(
             modifier = Modifier
                 .width(260.dp)
@@ -193,7 +259,6 @@ fun AppNavigation() {
             }
         }
 
-        // CONTENT AREA
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -207,25 +272,76 @@ fun AppNavigation() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(currentScreen.title, style = MaterialTheme.typography.h4, fontWeight = FontWeight.Bold)
-                    if (currentScreen == Screen.Management) {
-                        ActionButton("Dodaj Novo", onClick = { /* TODO: Odpri dialog */ }, icon = Icons.Default.Add)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ActionButton(
+                            text = if (isLoading) "Nalagam..." else "Osveži",
+                            onClick = { reload() },
+                            icon = Icons.Default.Refresh,
+                            enabled = !isLoading
+                        )
+                        if (currentScreen == Screen.Management) {
+                            ActionButton(
+                                "Dodaj Novo",
+                                onClick = { showAddDialog = true },
+                                icon = Icons.Default.Add
+                            )
+                        }
                     }
                 }
 
+                if (statusMessage != null) {
+                    Text(
+                        statusMessage!!,
+                        color = if (statusMessage!!.startsWith("Napaka")) Color(0xFFC0392B) else Color(0xFF27AE60)
+                    )
+                }
+
                 when (currentScreen) {
-                    Screen.Dashboard, Screen.Management -> {
+                    Screen.Dashboard -> {
                         DataTable(
                             properties = database,
-                            onDelete = { id -> database.removeAll { it.id == id } },
-                            onEdit = { /* TODO */ }
+                            onDelete = {},
+                            onEdit = {},
+                            readOnly = true
+                        )
+                    }
+                    Screen.Management -> {
+                        DataTable(
+                            properties = database,
+                            onDelete = { p ->
+                                val apiId = p.apiId
+                                if (apiId == null) {
+                                    statusMessage = "Napaka: zapis nima backend ID-ja"
+                                    return@DataTable
+                                }
+                                scope.launch(Dispatchers.IO) {
+                                    val err = try {
+                                        ApiClient.properties.delete(apiId); null
+                                    } catch (e: Exception) {
+                                        e.message ?: "Napaka pri brisanju"
+                                    }
+                                    withContext(Dispatchers.Main) {
+                                        if (err != null) statusMessage = "Napaka: $err"
+                                        else {
+                                            statusMessage = "Zapis izbrisan."
+                                            reload()
+                                        }
+                                    }
+                                }
+                            },
+                            onEdit = { editingProperty = it }
                         )
                     }
                     Screen.WebSources -> {
                         WebSourcesScreen(
                             onSendToDatabase = { selected ->
-                                val nextId = (database.maxOfOrNull { it.id ?: 0 } ?: 0) + 1
-                                selected.forEachIndexed { i, p ->
-                                    database.add(p.copy(id = nextId + i))
+                                statusMessage = "Pošiljam ${selected.size} zapisov..."
+                                scope.ingestAll(selected) { savedCount, err ->
+                                    statusMessage = if (err != null)
+                                        "Shranjeno $savedCount, napaka: $err"
+                                    else
+                                        "Uspešno shranjenih $savedCount zapisov."
+                                    reload()
                                 }
                             }
                         )
@@ -233,9 +349,13 @@ fun AppNavigation() {
                     Screen.Generator -> {
                         GeneratorScreen(
                             onSendToDatabase = { selected ->
-                                val nextId = (database.maxOfOrNull { it.id ?: 0 } ?: 0) + 1
-                                selected.forEachIndexed { i, p ->
-                                    database.add(p.copy(id = nextId + i))
+                                statusMessage = "Pošiljam ${selected.size} zapisov..."
+                                scope.ingestAll(selected) { savedCount, err ->
+                                    statusMessage = if (err != null)
+                                        "Shranjeno $savedCount, napaka: $err"
+                                    else
+                                        "Uspešno shranjenih $savedCount zapisov."
+                                    reload()
                                 }
                             }
                         )
@@ -243,6 +363,46 @@ fun AppNavigation() {
                 }
             }
         }
+    }
+
+    if (showAddDialog) {
+        PropertyEditDialog(
+            property = null,
+            onDismiss = { showAddDialog = false },
+            onConfirm = { newProp ->
+                showAddDialog = false
+                scope.ingestAll(listOf(newProp)) { saved, err ->
+                    statusMessage = if (err != null) "Napaka: $err" else "Dodano."
+                    reload()
+                }
+            }
+        )
+    }
+
+    editingProperty?.let { editing ->
+        PropertyEditDialog(
+            property = editing,
+            onDismiss = { editingProperty = null },
+            onConfirm = { updated ->
+                editingProperty = null
+                val apiId = updated.apiId
+                if (apiId == null) {
+                    statusMessage = "Napaka: zapis nima backend ID-ja"
+                    return@PropertyEditDialog
+                }
+                scope.launch(Dispatchers.IO) {
+                    val err = try {
+                        ApiClient.properties.update(apiId, PropertyMapper.toIngest(updated)); null
+                    } catch (e: Exception) {
+                        e.message ?: "Napaka pri posodabljanju"
+                    }
+                    withContext(Dispatchers.Main) {
+                        statusMessage = if (err != null) "Napaka: $err" else "Posodobljeno."
+                        reload()
+                    }
+                }
+            }
+        )
     }
 }
 
