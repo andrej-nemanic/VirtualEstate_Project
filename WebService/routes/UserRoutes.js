@@ -4,30 +4,13 @@ var UserController = require('../controllers/UserController.js');
 var authMiddleware = require('../middleware/authMiddleware.js');
 
 router.post('/login', UserController.login);
-/*
- * GET
- */
-router.get('/', authMiddleware, UserController.list);
-
-/*
- * GET
- */
-router.get('/:id', authMiddleware, UserController.show);
-
-/*
- * POST
- */
-//Register route
+router.post('/register', UserController.create);
 router.post('/', UserController.create);
 
-/*
- * PUT
- */
+router.get('/me', authMiddleware, UserController.me);
+router.get('/', authMiddleware, UserController.list);
+router.get('/:id', authMiddleware, UserController.show);
 router.put('/:id', authMiddleware, UserController.update);
-
-/*
- * DELETE
- */
 router.delete('/:id', authMiddleware, UserController.remove);
 
 module.exports = router;
