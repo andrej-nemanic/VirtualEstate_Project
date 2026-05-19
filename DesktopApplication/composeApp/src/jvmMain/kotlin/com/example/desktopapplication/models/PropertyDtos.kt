@@ -12,15 +12,10 @@ data class PropertyIngestDto(
     val lng: Double? = null
 )
 
-data class LocationResponseDto(
-    val _id: String? = null,
-    val address: String? = null,
-    val city: String? = null
-)
-
 data class PropertyResponseDto(
     val _id: String? = null,
-    val location: LocationResponseDto? = null,
+    val address: String? = null,
+    val city: String? = null,
     val type: String? = null,
     val size: Double? = null,
     val price: Double? = null,
@@ -73,8 +68,8 @@ object PropertyMapper {
     fun fromResponse(dto: PropertyResponseDto, localId: Int): Property = Property(
         id = localId,
         apiId = dto._id,
-        address = dto.location?.address ?: "",
-        city = dto.location?.city ?: "",
+        address = dto.address ?: "",
+        city = dto.city ?: "",
         type = displayFromBackend(dto.type),
         size = dto.size ?: 0.0,
         price = dto.price ?: 0.0,

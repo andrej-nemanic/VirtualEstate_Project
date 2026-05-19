@@ -32,7 +32,7 @@ export default function Dashboard() {
   useEffect(() => {
     const onCreate = (p) => {
       setProperties(prev => [p, ...prev]);
-      setToast(`Nova nepremičnina: ${p.type} v ${p.location?.city || ''}`);
+      setToast(`Nova nepremičnina: ${p.type} v ${p.city || ''}`);
       setTimeout(() => setToast(''), 3500);
     };
     const onUpdate = (p) => {
@@ -81,8 +81,8 @@ export default function Dashboard() {
             {properties.map(p => (
               <div key={p._id} className="property-card">
                 <span className={`badge ${p.type}`}>{p.type}</span>
-                <h3>{p.location?.address || 'Neznan naslov'}</h3>
-                <div className="meta">{p.location?.city}</div>
+                <h3>{p.address || 'Neznan naslov'}</h3>
+                <div className="meta">{p.city}</div>
                 <div className="price">{p.price?.toLocaleString()} €</div>
                 <div className="meta">{p.size} m² • {p.buildYear}</div>
                 {p.description && <div className="meta" style={{ marginTop: 6 }}>{p.description}</div>}

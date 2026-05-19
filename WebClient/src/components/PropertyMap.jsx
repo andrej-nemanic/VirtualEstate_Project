@@ -26,12 +26,17 @@ function makeIcon(type) {
   });
 }
 
+function hasRealCoords(p) {
+  const c = p.coordinates?.coordinates;
+  return Array.isArray(c) && c.length === 2 && !(c[0] === 0 && c[1] === 0);
+}
+
 function FitBounds({ properties }) {
   const map = useMap();
   useEffect(() => {
     const coords = properties
-      .filter(p => p.location?.location?.coordinates)
-      .map(p => [p.location.location.coordinates[1], p.location.location.coordinates[0]]);
+      .filter(hasRealCoords)
+      .map(p => [p.coordinates.coordinates[1], p.coordinates.coordinates[0]]);
     if (coords.length > 0) {
       map.fitBounds(coords, { padding: [50, 50], maxZoom: 13 });
     }
@@ -51,13 +56,13 @@ export default function PropertyMap({ properties }) {
         />
         <FitBounds properties={properties} />
         {properties.map(p => {
-          const coords = p.location?.location?.coordinates;
-          if (!coords) return null;
+          if (!hasRealCoords(p)) return null;
+          const coords = p.coordinates.coordinates;
           return (
             <Marker key={p._id} position={[coords[1], coords[0]]} icon={makeIcon(p.type)}>
               <Popup>
                 <strong>{p.type.toUpperCase()}</strong><br />
-                {p.location?.address}, {p.location?.city}<br />
+                {p.address}, {p.city}<br />
                 Cena: <b>{p.price?.toLocaleString()} €</b><br />
                 Velikost: {p.size} m²<br />
                 Leto: {p.buildYear}<br />

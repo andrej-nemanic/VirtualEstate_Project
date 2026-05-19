@@ -24,7 +24,7 @@ object WebScraper {
             val doc: Document = Ksoup.parseGetRequestBlocking(
                 url = "https://nepremicnina.si/nepremicnine"
             )
-            doc.select("a[href*=/nepremicnina/]").take(10).forEach { listing ->
+            doc.select("a[href*=/nepremicnina/]").forEach { listing ->
                 val location = listing.select("h1").text()
                 val propertyType = listing.select("h2").text()
                 val sizeText = listing.select("h3").text()
@@ -58,7 +58,7 @@ object WebScraper {
             val doc: Document = Ksoup.parseGetRequestBlocking(
                 url = "https://24nep.si/oglasi"
             )
-            doc.select("a[href*=/oglas/]").take(10).forEach { listing ->
+            doc.select("a[href*=/oglas/]").forEach { listing ->
                 val location = listing.select("h2").text()
                 val title = listing.select("h4").text()
                 val priceText = listing.select("strong").text()

@@ -8,7 +8,6 @@ var cors = require('cors');
 
 var userRoutes = require('./routes/UserRoutes');
 var propertyRoutes = require('./routes/PropertyRoutes');
-var locationRoutes = require('./routes/LocationRoutes');
 
 mongoose.connect('mongodb://127.0.0.1:27017/virtual_estate');
 
@@ -32,7 +31,6 @@ app.get('/', function(req, res) {
 
 app.use('/api/users', userRoutes);
 app.use('/api/properties', propertyRoutes);
-app.use('/api/locations', locationRoutes);
 
 app.use(function(req, res, next) {
     next(createError(404));

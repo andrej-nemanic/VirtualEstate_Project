@@ -9,6 +9,7 @@ router.get('/', PropertyController.list);
 router.post('/ingest', PropertyController.ingestCreate);
 router.put('/ingest/:id', PropertyController.ingestUpdate);
 router.delete('/ingest/:id', PropertyController.ingestRemove);
+router.post('/geocode-missing', PropertyController.geocodeMissing);
 
 router.get('/:id', PropertyController.show);
 router.post('/', authMiddleware, PropertyController.create);
