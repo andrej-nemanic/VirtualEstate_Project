@@ -4,6 +4,7 @@ var LocationController = require('../controllers/LocationController.js');
 var authMiddleware = require('../middleware/authMiddleware.js');
 
 router.get('/near', LocationController.near);
+router.post('/geocode-missing', LocationController.geocodeMissing);
 router.get('/', LocationController.list);
 router.get('/:id', LocationController.show);
 

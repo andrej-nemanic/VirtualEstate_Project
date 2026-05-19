@@ -1,4 +1,5 @@
 var LocationModel = require('../models/LocationModel.js');
+var Geocoder = require('../services/Geocoder.js');
 
 module.exports = {
 
@@ -83,6 +84,36 @@ module.exports = {
             return res.status(204).json();
         } catch (err) {
             return res.status(500).json({ message: 'Error when deleting the Location.', error: err });
+        }
+    },
+
+    geocodeMissing: async function (req, res) {
+        try {
+            const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+            const candidates = await LocationModel.find({
+                $or: [
+                    { 'location.coordinates': { $size: 0 } },
+                    { 'location.coordinates': [0, 0] },
+                    { location: { $exists: false } }
+                ]
+            }).limit(limit);
+
+            let updated = 0;
+            const failures = [];
+            for (const loc of candidates) {
+                const hit = await Geocoder.geocode(loc.address, loc.city);
+                if (hit) {
+                    loc.location = { type: 'Point', coordinates: [hit.lng, hit.lat] };
+                    await loc.save();
+                    updated++;
+                } else {
+                    failures.push({ _id: loc._id, address: loc.address, city: loc.city });
+                }
+            }
+            return res.json({ checked: candidates.length, updated, failed: failures });
+        } catch (err) {
+            console.error('Geocode missing error:', err);
+            return res.status(500).json({ message: 'Error during geocode backfill.', error: err });
         }
     }
 };

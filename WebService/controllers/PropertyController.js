@@ -1,5 +1,59 @@
 var PropertyModel = require('../models/PropertyModel.js');
 var LocationModel = require('../models/LocationModel.js');
+var Geocoder = require('../services/Geocoder.js');
+
+const TYPE_ALIASES = {
+    'stanovanje': 'apartment',
+    'apartment': 'apartment',
+    'apartma': 'apartment',
+    'vikend': 'apartment',
+    'poslovni prostor': 'apartment',
+    'garaža': 'apartment',
+    'garaza': 'apartment',
+    'hiša': 'house',
+    'hisa': 'house',
+    'house': 'house',
+    'zemljišče': 'land',
+    'zemljisce': 'land',
+    'land': 'land',
+    'condominium': 'condominium'
+};
+
+function normalizeType(raw) {
+    if (!raw) return 'house';
+    const key = String(raw).trim().toLowerCase();
+    return TYPE_ALIASES[key] || 'house';
+}
+
+async function findOrCreateLocation({ address, city, lat, lng }) {
+    let location = await LocationModel.findOne({ address: address || '', city: city || '' });
+    if (location) {
+        const existing = location.location && location.location.coordinates;
+        const hasZero = !existing || (existing[0] === 0 && existing[1] === 0);
+        if (hasZero && typeof lng !== 'number' && typeof lat !== 'number') {
+            const hit = await Geocoder.geocode(address, city);
+            if (hit) {
+                location.location = { type: 'Point', coordinates: [hit.lng, hit.lat] };
+                await location.save();
+            }
+        }
+        return location;
+    }
+
+    let coords;
+    if (typeof lng === 'number' && typeof lat === 'number') {
+        coords = [lng, lat];
+    } else {
+        const hit = await Geocoder.geocode(address, city);
+        coords = hit ? [hit.lng, hit.lat] : [0, 0];
+    }
+
+    return await LocationModel.create({
+        address: address || '',
+        city: city || '',
+        location: { type: 'Point', coordinates: coords }
+    });
+}
 
 module.exports = {
 
@@ -116,6 +170,76 @@ module.exports = {
             return res.status(204).json();
         } catch (err) {
             return res.status(500).json({ message: 'Error when deleting the Property.', error: err });
+        }
+    },
+
+    ingestCreate: async function (req, res) {
+        try {
+            const body = req.body || {};
+            const location = await findOrCreateLocation({
+                address: body.address,
+                city: body.city,
+                lat: body.lat,
+                lng: body.lng
+            });
+            const property = await PropertyModel.create({
+                id: body.id,
+                location: location._id,
+                type: normalizeType(body.type),
+                size: body.size,
+                price: body.price,
+                buildYear: body.buildYear,
+                description: body.description,
+                pictures: body.pictures || [],
+                dateOfPosting: body.dateOfPosting || new Date(),
+                propertyLink: body.propertyLink
+            });
+            const populated = await PropertyModel.findById(property._id).populate('location');
+            if (req.io) req.io.emit('propertyCreated', populated);
+            return res.status(201).json(populated);
+        } catch (err) {
+            console.error('Ingest create error:', err);
+            return res.status(500).json({ message: 'Error when ingesting Property.', error: err });
+        }
+    },
+
+    ingestUpdate: async function (req, res) {
+        try {
+            const body = req.body || {};
+            const property = await PropertyModel.findById(req.params.id);
+            if (!property) return res.status(404).json({ message: 'No such Property' });
+
+            if (body.address !== undefined || body.city !== undefined || body.lat !== undefined || body.lng !== undefined) {
+                const location = await findOrCreateLocation({
+                    address: body.address,
+                    city: body.city,
+                    lat: body.lat,
+                    lng: body.lng
+                });
+                property.location = location._id;
+            }
+            if (body.type !== undefined) property.type = normalizeType(body.type);
+            ['size', 'price', 'buildYear', 'description', 'pictures', 'dateOfPosting', 'propertyLink'].forEach(f => {
+                if (body[f] !== undefined) property[f] = body[f];
+            });
+
+            await property.save();
+            const populated = await PropertyModel.findById(property._id).populate('location');
+            if (req.io) req.io.emit('propertyUpdated', populated);
+            return res.json(populated);
+        } catch (err) {
+            console.error('Ingest update error:', err);
+            return res.status(500).json({ message: 'Error when updating Property.', error: err });
+        }
+    },
+
+    ingestRemove: async function (req, res) {
+        try {
+            const property = await PropertyModel.findByIdAndDelete(req.params.id);
+            if (req.io && property) req.io.emit('propertyDeleted', { _id: property._id });
+            return res.status(204).json();
+        } catch (err) {
+            return res.status(500).json({ message: 'Error when deleting Property.', error: err });
         }
     }
 };
