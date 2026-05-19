@@ -5,9 +5,6 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 
-// Enum to define our navigation destinations
-
-
 fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,

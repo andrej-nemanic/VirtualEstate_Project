@@ -9,11 +9,7 @@ var PropertySchema = new Schema({
         type: { type: String, enum: ['Point'], default: 'Point' },
         coordinates: { type: [Number], default: [0, 0] }
     },
-    'type': {
-        type: String,
-        enum: ['house', 'apartment', 'land', 'condominium'],
-        default: 'house'
-    },
+    'type': { type: String, default: 'Stanovanje' },
     'size': Number,
     'price': Number,
     'buildYear': Number,

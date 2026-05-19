@@ -1,29 +1,6 @@
 var PropertyModel = require('../models/PropertyModel.js');
 var Geocoder = require('../services/Geocoder.js');
 
-const TYPE_ALIASES = {
-    'stanovanje': 'apartment',
-    'apartment': 'apartment',
-    'apartma': 'apartment',
-    'vikend': 'apartment',
-    'poslovni prostor': 'apartment',
-    'garaža': 'apartment',
-    'garaza': 'apartment',
-    'hiša': 'house',
-    'hisa': 'house',
-    'house': 'house',
-    'zemljišče': 'land',
-    'zemljisce': 'land',
-    'land': 'land',
-    'condominium': 'condominium'
-};
-
-function normalizeType(raw) {
-    if (!raw) return 'house';
-    const key = String(raw).trim().toLowerCase();
-    return TYPE_ALIASES[key] || 'house';
-}
-
 async function buildCoordinates({ address, city, lat, lng }) {
     if (typeof lng === 'number' && typeof lat === 'number') {
         return { type: 'Point', coordinates: [lng, lat] };
@@ -36,7 +13,7 @@ async function buildCoordinates({ address, city, lat, lng }) {
 function applyCommonFields(property, body) {
     if (body.address !== undefined) property.address = body.address;
     if (body.city !== undefined) property.city = body.city;
-    if (body.type !== undefined) property.type = normalizeType(body.type);
+    if (body.type !== undefined) property.type = body.type;
     ['size', 'price', 'buildYear', 'description', 'pictures', 'dateOfPosting', 'propertyLink'].forEach(f => {
         if (body[f] !== undefined) property[f] = body[f];
     });
@@ -113,7 +90,7 @@ module.exports = {
                 address: body.address,
                 city: body.city,
                 coordinates: coords,
-                type: normalizeType(body.type),
+                type: body.type,
                 size: body.size,
                 price: body.price,
                 buildYear: body.buildYear,
@@ -180,7 +157,7 @@ module.exports = {
                 address: body.address,
                 city: body.city,
                 coordinates: coords,
-                type: normalizeType(body.type),
+                type: body.type,
                 size: body.size,
                 price: body.price,
                 buildYear: body.buildYear,

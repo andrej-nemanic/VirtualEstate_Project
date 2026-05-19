@@ -4,7 +4,7 @@ import { propertyApi } from '../api/client.js';
 const emptyProperty = {
   address: '',
   city: '',
-  type: 'house',
+  type: 'Stanovanje',
   size: '',
   price: '',
   buildYear: '',
@@ -84,7 +84,7 @@ export default function Admin() {
     setForm({
       address: p.address || '',
       city: p.city || '',
-      type: p.type || 'house',
+      type: p.type || 'Stanovanje',
       size: p.size ?? '',
       price: p.price ?? '',
       buildYear: p.buildYear ?? '',
@@ -116,10 +116,12 @@ export default function Admin() {
             <div className="form-group">
               <label>Tip</label>
               <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
-                <option value="house">Hiša</option>
-                <option value="apartment">Stanovanje</option>
-                <option value="land">Zemljišče</option>
-                <option value="condominium">Kondominij</option>
+                <option value="Stanovanje">Stanovanje</option>
+                <option value="Hiša">Hiša</option>
+                <option value="Vikend">Vikend</option>
+                <option value="Poslovni prostor">Poslovni prostor</option>
+                <option value="Garaža">Garaža</option>
+                <option value="Zemljišče">Zemljišče</option>
               </select>
             </div>
             <div className="form-group">

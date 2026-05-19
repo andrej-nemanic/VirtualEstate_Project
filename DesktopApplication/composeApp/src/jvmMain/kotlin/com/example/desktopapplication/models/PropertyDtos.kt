@@ -25,44 +25,20 @@ data class PropertyResponseDto(
 
 object PropertyMapper {
 
-    private val toBackend = mapOf(
-        "stanovanje" to "apartment",
-        "apartment" to "apartment",
-        "apartma" to "apartment",
-        "vikend" to "apartment",
-        "poslovni prostor" to "apartment",
-        "garaža" to "apartment",
-        "garaza" to "apartment",
-        "hiša" to "house",
-        "hisa" to "house",
-        "house" to "house",
-        "zemljišče" to "land",
-        "zemljisce" to "land",
-        "land" to "land",
-        "condominium" to "condominium"
-    )
-
-    private val toDisplay = mapOf(
-        "apartment" to "Stanovanje",
-        "house" to "Hiša",
-        "land" to "Zemljišče",
-        "condominium" to "Apartma"
-    )
-
-    fun normalizeForBackend(type: String?): String =
-        toBackend[type?.trim()?.lowercase()] ?: "house"
-
-    fun displayFromBackend(type: String?): String =
-        toDisplay[type?.trim()?.lowercase()] ?: (type ?: "")
-
-    fun toIngest(property: Property): PropertyIngestDto = PropertyIngestDto(
+    fun toIngest(
+        property: Property,
+        lng: Double? = null,
+        lat: Double? = null
+    ): PropertyIngestDto = PropertyIngestDto(
         address = property.address,
         city = property.city,
-        type = normalizeForBackend(property.type),
+        type = property.type,
         size = property.size,
         price = property.price,
         buildYear = property.buildYear,
-        description = property.description
+        description = property.description,
+        lng = lng,
+        lat = lat
     )
 
     fun fromResponse(dto: PropertyResponseDto, localId: Int): Property = Property(
@@ -70,7 +46,7 @@ object PropertyMapper {
         apiId = dto._id,
         address = dto.address ?: "",
         city = dto.city ?: "",
-        type = displayFromBackend(dto.type),
+        type = dto.type ?: "",
         size = dto.size ?: 0.0,
         price = dto.price ?: 0.0,
         buildYear = dto.buildYear ?: 0,

@@ -29,8 +29,8 @@ import kotlinx.coroutines.withContext
 
 enum class Screen(val title: String, val icon: ImageVector) {
     Dashboard("Pregled podatkov", Icons.Default.List),
-    Management("Upravljanje (CRUD)", Icons.Default.Edit),
-    WebSources("Spletni viri", Icons.Default.CloudDownload),
+    Management("Upravljanje", Icons.Default.Edit),
+    WebSources("Pridobi s spleta", Icons.Default.CloudDownload),
     Generator("Generator podatkov", Icons.Default.Build)
 }
 
@@ -124,18 +124,26 @@ fun DataTable(
     }
 }
 
+val PROPERTY_TYPES = listOf("Stanovanje", "Hiša", "Vikend", "Poslovni prostor", "Garaža", "Zemljišče")
+
 @Composable
 fun PropertyEditDialog(
     property: Property? = null,
     onDismiss: () -> Unit,
-    onConfirm: (Property) -> Unit
+    onConfirm: (Property, Double?, Double?) -> Unit
 ) {
     var address by remember { mutableStateOf(property?.address ?: "") }
     var city by remember { mutableStateOf(property?.city ?: "") }
-    var type by remember { mutableStateOf(property?.type ?: "Stanovanje") }
+    var type by remember {
+        mutableStateOf(property?.type?.takeIf { it in PROPERTY_TYPES } ?: "Stanovanje")
+    }
     var size by remember { mutableStateOf(property?.size?.toString() ?: "0") }
     var price by remember { mutableStateOf(property?.price?.toString() ?: "") }
     var buildYear by remember { mutableStateOf(property?.buildYear?.toString() ?: "2024") }
+    var description by remember { mutableStateOf(property?.description ?: "") }
+    var lng by remember { mutableStateOf("") }
+    var lat by remember { mutableStateOf("") }
+    var typeMenuExpanded by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -144,10 +152,43 @@ fun PropertyEditDialog(
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 StyledTextField(address, { address = it }, "Naslov")
                 StyledTextField(city, { city = it }, "Mesto")
-                StyledTextField(type, { type = it }, "Tip (Stanovanje/Hiša/Zemljišče)")
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = type,
+                        onValueChange = {},
+                        label = { Text("Tip") },
+                        readOnly = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp),
+                        trailingIcon = {
+                            IconButton(onClick = { typeMenuExpanded = !typeMenuExpanded }) {
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                            }
+                        }
+                    )
+                    DropdownMenu(
+                        expanded = typeMenuExpanded,
+                        onDismissRequest = { typeMenuExpanded = false }
+                    ) {
+                        PROPERTY_TYPES.forEach { option ->
+                            DropdownMenuItem(onClick = {
+                                type = option
+                                typeMenuExpanded = false
+                            }) {
+                                Text(option)
+                            }
+                        }
+                    }
+                }
                 StyledTextField(size, { size = it }, "Velikost (m²)")
                 StyledTextField(price, { price = it }, "Cena (€)")
                 StyledTextField(buildYear, { buildYear = it }, "Leto izgradnje")
+                StyledTextField(description, { description = it }, "Opis")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StyledTextField(lng, { lng = it }, "Geo. dolžina (lng) — opcijsko", Modifier.weight(1f))
+                    StyledTextField(lat, { lat = it }, "Geo. širina (lat) — opcijsko", Modifier.weight(1f))
+                }
             }
         },
         confirmButton = {
@@ -162,8 +203,10 @@ fun PropertyEditDialog(
                         size = size.toDoubleOrNull() ?: 0.0,
                         price = price.toDoubleOrNull() ?: 0.0,
                         buildYear = buildYear.toIntOrNull() ?: 2024,
-                        description = property?.description
-                    )
+                        description = description.ifBlank { null }
+                    ),
+                    lng.toDoubleOrNull(),
+                    lat.toDoubleOrNull()
                 )
             }) { Text("Shrani") }
         },
@@ -369,11 +412,18 @@ fun AppNavigation() {
         PropertyEditDialog(
             property = null,
             onDismiss = { showAddDialog = false },
-            onConfirm = { newProp ->
+            onConfirm = { newProp, lng, lat ->
                 showAddDialog = false
-                scope.ingestAll(listOf(newProp)) { saved, err ->
-                    statusMessage = if (err != null) "Napaka: $err" else "Dodano."
-                    reload()
+                scope.launch(Dispatchers.IO) {
+                    val err = try {
+                        ApiClient.properties.create(PropertyMapper.toIngest(newProp, lng, lat)); null
+                    } catch (e: Exception) {
+                        e.message ?: "Napaka pri ustvarjanju"
+                    }
+                    withContext(Dispatchers.Main) {
+                        statusMessage = if (err != null) "Napaka: $err" else "Dodano."
+                        reload()
+                    }
                 }
             }
         )
@@ -383,7 +433,7 @@ fun AppNavigation() {
         PropertyEditDialog(
             property = editing,
             onDismiss = { editingProperty = null },
-            onConfirm = { updated ->
+            onConfirm = { updated, lng, lat ->
                 editingProperty = null
                 val apiId = updated.apiId
                 if (apiId == null) {
@@ -392,7 +442,7 @@ fun AppNavigation() {
                 }
                 scope.launch(Dispatchers.IO) {
                     val err = try {
-                        ApiClient.properties.update(apiId, PropertyMapper.toIngest(updated)); null
+                        ApiClient.properties.update(apiId, PropertyMapper.toIngest(updated, lng, lat)); null
                     } catch (e: Exception) {
                         e.message ?: "Napaka pri posodabljanju"
                     }
@@ -496,7 +546,7 @@ fun WebSourcesScreen(onSendToDatabase: (List<Property>) -> Unit) {
                     Text("Naslov", modifier = Modifier.weight(2f), fontWeight = FontWeight.Bold)
                     Text("Mesto", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
                     Text("Cena", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                    Text("Vir", modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+                    Text("Opis", modifier = Modifier.weight(1.5f), fontWeight = FontWeight.Bold)
                 }
                 Divider()
                 LazyColumn {
@@ -518,10 +568,15 @@ fun WebSourcesScreen(onSendToDatabase: (List<Property>) -> Unit) {
                                 onCheckedChange = null,
                                 modifier = Modifier.weight(0.3f)
                             )
-                            Text(property.address, modifier = Modifier.weight(2f))
+                            Text(property.address, modifier = Modifier.weight(2f), maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                             Text(property.city, modifier = Modifier.weight(1f))
                             Text("${property.price} €", modifier = Modifier.weight(1f))
-                            Text(property.description ?: "", modifier = Modifier.weight(1f))
+                            Text(
+                                property.description ?: "",
+                                modifier = Modifier.weight(1.5f),
+                                maxLines = 2,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
                         }
                         Divider()
                     }

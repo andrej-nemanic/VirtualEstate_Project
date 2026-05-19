@@ -10,10 +10,12 @@ L.Icon.Default.mergeOptions({
 });
 
 const typeColors = {
-  house: '#16a34a',
-  apartment: '#f59e0b',
-  land: '#6366f1',
-  condominium: '#ec4899'
+  'Stanovanje': '#f59e0b',
+  'Hiša': '#16a34a',
+  'Vikend': '#10b981',
+  'Poslovni prostor': '#0ea5e9',
+  'Garaža': '#64748b',
+  'Zemljišče': '#6366f1'
 };
 
 function makeIcon(type) {

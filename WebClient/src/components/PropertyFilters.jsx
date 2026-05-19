@@ -7,10 +7,12 @@ export default function PropertyFilters({ filters, setFilters, onReset }) {
         <label style={{ fontSize: 12, color: '#6b7280' }}>Tip</label>
         <select value={filters.type || ''} onChange={e => update('type', e.target.value)}>
           <option value="">Vsi</option>
-          <option value="house">Hiša</option>
-          <option value="apartment">Stanovanje</option>
-          <option value="land">Zemljišče</option>
-          <option value="condominium">Kondominij</option>
+          <option value="Stanovanje">Stanovanje</option>
+          <option value="Hiša">Hiša</option>
+          <option value="Vikend">Vikend</option>
+          <option value="Poslovni prostor">Poslovni prostor</option>
+          <option value="Garaža">Garaža</option>
+          <option value="Zemljišče">Zemljišče</option>
         </select>
       </div>
       <div>
