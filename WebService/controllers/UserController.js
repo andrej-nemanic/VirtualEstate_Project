@@ -1,175 +1,102 @@
 var UserModel = require('../models/UserModel.js');
 var jwt = require('jsonwebtoken');
-var bcrypt = require('bcrypt');
 
-/**
- * UserController.js
- *
- * @description :: Server-side logic for managing Users.
- */
+const JWT_SECRET = process.env.JWT_SECRET || 'skrivniKljuc';
+
 module.exports = {
 
-    /**
-     * UserController.list()
-     */
-    list: function (req, res) {
-        UserModel.find(function (err, Users) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when getting User.',
-                    error: err
-                });
-            }
-
-            return res.json(Users);
-        });
-    },
-
-    /**
-     * UserController.show()
-     */
-    show: function (req, res) {
-        var id = req.params.id;
-
-        UserModel.findOne({_id: id}, function (err, User) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when getting User.',
-                    error: err
-                });
-            }
-
-            if (!User) {
-                return res.status(404).json({
-                    message: 'No such User'
-                });
-            }
-
-            return res.json(User);
-        });
-    },
-
-    /**
-     * UserController.create()
-     */
-    create: async function (req, res) {
-        var User = new UserModel({
-            name : req.body.name,
-            id : req.body.id,
-            personalData : req.body.personalData,
-            email : req.body.email,
-            password : req.body.password,
-            type : req.body.type
-        });
-
+    list: async function (req, res) {
         try {
-            // Shranimo uporabnika z uporabo await (brez callback funkcije)
-            var savedUser = await User.save();
-            // Če je shranjevanje uspešno, vrnemo status 211 (ali 201 Created) in podatke
-            return res.status(201).json(savedUser);
+            const users = await UserModel.find().select('-password');
+            return res.json(users);
         } catch (err) {
-
-            console.error("Točna napaka iz MongoDB:", err);
-            // Lovljenje napake (npr. če email že obstaja ali podatki niso popolni)
-            return res.status(500).json({
-                message: 'Error when creating User',
-                error: err
-            });
+            return res.status(500).json({ message: 'Error when getting Users.', error: err });
         }
     },
 
-    /**
-     * UserController.update()
-     */
-    update: function (req, res) {
-        var id = req.params.id;
-
-        UserModel.findOne({_id: id}, function (err, User) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when getting User',
-                    error: err
-                });
-            }
-
-            if (!User) {
-                return res.status(404).json({
-                    message: 'No such User'
-                });
-            }
-
-            User.name = req.body.name ? req.body.name : User.name;
-			User.id = req.body.id ? req.body.id : User.id;
-			User.personalData = req.body.personalData ? req.body.personalData : User.personalData;
-			User.email = req.body.email ? req.body.email : User.email;
-			User.password = req.body.password ? req.body.password : User.password;
-			User.type = req.body.type ? req.body.type : User.type;
-			
-            User.save(function (err, User) {
-                if (err) {
-                    return res.status(500).json({
-                        message: 'Error when updating User.',
-                        error: err
-                    });
-                }
-
-                return res.json(User);
-            });
-        });
-    },
-
-    /**
-     * UserController.remove()
-     */
-    remove: function (req, res) {
-        var id = req.params.id;
-
-        UserModel.findByIdAndRemove(id, function (err, User) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when deleting the User.',
-                    error: err
-                });
-            }
-
-            return res.status(204).json();
-        });
-    },
-    /**
-     * UserController.login()
-     */
-    login: async function (req, res) {
-        var email = req.body.email;
-        var password = req.body.password;
-
+    show: async function (req, res) {
         try {
-            // Poiščemo uporabnika z await namesto s callbackom
-            var User = await UserModel.findOne({ email: email });
-            
-            if (!User) {
-                return res.status(401).json({ message: 'Napačna e-pošta ali geslo.' });
-            }
+            const user = await UserModel.findById(req.params.id).select('-password');
+            if (!user) return res.status(404).json({ message: 'No such User' });
+            return res.json(user);
+        } catch (err) {
+            return res.status(500).json({ message: 'Error when getting User.', error: err });
+        }
+    },
 
-            // Preverimo geslo (comparePassword še vedno uporablja vaš callback, kar je v redu, ker je to vaša metoda)
-            User.comparePassword(password, function(err, isMatch) {
+    create: async function (req, res) {
+        try {
+            const user = new UserModel({
+                name: req.body.name,
+                id: req.body.id,
+                personalData: req.body.personalData,
+                email: req.body.email,
+                password: req.body.password,
+                type: req.body.type
+            });
+            const saved = await user.save();
+            const obj = saved.toObject();
+            delete obj.password;
+            return res.status(201).json(obj);
+        } catch (err) {
+            console.error('Create user error:', err);
+            return res.status(500).json({ message: 'Error when creating User', error: err });
+        }
+    },
+
+    update: async function (req, res) {
+        try {
+            const user = await UserModel.findById(req.params.id);
+            if (!user) return res.status(404).json({ message: 'No such User' });
+
+            if (req.body.name !== undefined) user.name = req.body.name;
+            if (req.body.id !== undefined) user.id = req.body.id;
+            if (req.body.personalData !== undefined) user.personalData = req.body.personalData;
+            if (req.body.email !== undefined) user.email = req.body.email;
+            if (req.body.password !== undefined) user.password = req.body.password;
+            if (req.body.type !== undefined) user.type = req.body.type;
+
+            const saved = await user.save();
+            const obj = saved.toObject();
+            delete obj.password;
+            return res.json(obj);
+        } catch (err) {
+            return res.status(500).json({ message: 'Error when updating User.', error: err });
+        }
+    },
+
+    remove: async function (req, res) {
+        try {
+            await UserModel.findByIdAndDelete(req.params.id);
+            return res.status(204).json();
+        } catch (err) {
+            return res.status(500).json({ message: 'Error when deleting the User.', error: err });
+        }
+    },
+
+    login: async function (req, res) {
+        try {
+            const { email, password } = req.body;
+            const user = await UserModel.findOne({ email: email });
+            if (!user) return res.status(401).json({ message: 'Napačna e-pošta ali geslo.' });
+
+            user.comparePassword(password, function (err, isMatch) {
                 if (err || !isMatch) {
                     return res.status(401).json({ message: 'Napačna e-pošta ali geslo.' });
                 }
-
-                // Generiramo JWT žeton
-                var token = jwt.sign(
-                    { id: User._id, email: User.email, type: User.type }, 
-                    'skrivniKljuc', 
-                    { expiresIn: '1h' }
+                const token = jwt.sign(
+                    { id: user._id, email: user.email, type: user.type },
+                    JWT_SECRET,
+                    { expiresIn: '24h' }
                 );
-
                 return res.json({
                     message: 'Uspešna prijava',
                     token: token,
                     user: {
-                        id: User._id,
-                        name: User.name,
-                        type: User.type
+                        id: user._id,
+                        name: user.name,
+                        email: user.email,
+                        type: user.type
                     }
                 });
             });
@@ -177,4 +104,14 @@ module.exports = {
             return res.status(500).json({ message: 'Napaka pri iskanju uporabnika.', error: err });
         }
     },
+
+    me: async function (req, res) {
+        try {
+            const user = await UserModel.findById(req.user.id).select('-password');
+            if (!user) return res.status(404).json({ message: 'User not found' });
+            return res.json(user);
+        } catch (err) {
+            return res.status(500).json({ message: 'Error.', error: err });
+        }
+    }
 };

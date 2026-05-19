@@ -1,142 +1,121 @@
 var PropertyModel = require('../models/PropertyModel.js');
 var LocationModel = require('../models/LocationModel.js');
-/**
- * PropertyController.js
- *
- * @description :: Server-side logic for managing Propertys.
- */
+
 module.exports = {
 
-    /**
-     * PropertyController.list()
-     */
     list: async function (req, res) {
         try {
-            // POPRAVLJENO: exec() ne sprejema več callbacka, uporabimo await
-            var Propertys = await PropertyModel.find().populate('location').exec();
-            return res.json(Propertys);
+            const filter = {};
+            if (req.query.type) filter.type = req.query.type;
+            if (req.query.minPrice || req.query.maxPrice) {
+                filter.price = {};
+                if (req.query.minPrice) filter.price.$gte = parseFloat(req.query.minPrice);
+                if (req.query.maxPrice) filter.price.$lte = parseFloat(req.query.maxPrice);
+            }
+            if (req.query.minSize || req.query.maxSize) {
+                filter.size = {};
+                if (req.query.minSize) filter.size.$gte = parseFloat(req.query.minSize);
+                if (req.query.maxSize) filter.size.$lte = parseFloat(req.query.maxSize);
+            }
+
+            const properties = await PropertyModel.find(filter).populate('location');
+            return res.json(properties);
         } catch (err) {
-            console.error("Napaka pri populaciji:", err);
-            return res.status(500).json({
-                message: 'Error when getting Property.',
-                error: err
-            });
+            console.error('List properties error:', err);
+            return res.status(500).json({ message: 'Error when getting Property.', error: err });
         }
     },
 
-    /**
-     * PropertyController.show()
-     */
     show: async function (req, res) {
-        var id = req.params.id;
-
         try {
-            var Property = await PropertyModel.findOne({_id: id}).exec();
-            if (!Property) {
-                return res.status(404).json({
-                    message: 'No such Property'
-                });
-            }
-            return res.json(Property);
+            const property = await PropertyModel.findById(req.params.id).populate('location');
+            if (!property) return res.status(404).json({ message: 'No such Property' });
+            return res.json(property);
         } catch (err) {
-            return res.status(500).json({
-                message: 'Error when getting Property.',
-                error: err
-            });
+            return res.status(500).json({ message: 'Error when getting Property.', error: err });
         }
     },
 
-    /**
-     * PropertyController.create()
-     */
+    searchByDistance: async function (req, res) {
+        try {
+            const lat = parseFloat(req.query.lat);
+            const lng = parseFloat(req.query.lng);
+            const distance = parseInt(req.query.distance) || 5000;
+
+            if (isNaN(lat) || isNaN(lng)) {
+                return res.status(400).json({ message: 'lat in lng sta obvezna' });
+            }
+
+            const locations = await LocationModel.find({
+                location: {
+                    $near: {
+                        $geometry: { type: 'Point', coordinates: [lng, lat] },
+                        $maxDistance: distance
+                    }
+                }
+            });
+            const locationIds = locations.map(l => l._id);
+            const properties = await PropertyModel.find({ location: { $in: locationIds } }).populate('location');
+            return res.json(properties);
+        } catch (err) {
+            console.error('Search error:', err);
+            return res.status(500).json({ message: 'Error when searching properties.', error: err });
+        }
+    },
+
     create: async function (req, res) {
-        var Property = new PropertyModel({
-            id : req.body.id,
-            location : req.body.location,
-            type : req.body.type,
-            size : req.body.size,
-            price : req.body.price,
-            buildYear : req.body.buildYear,
-            description : req.body.description,
-            pictures : req.body.pictures,
-            dateOfPosting : req.body.dateOfPosting,
-            propertyLink : req.body.propertyLink
-        });
-
         try {
-            var savedProperty = await Property.save();
-            
-            // POPRAVLJENO: Pred oddajanjem preko Web Socketov moramo populirati lokacijo,
-            // da odjemalec dobi GeoJSON koordinate za takojšen izris na Leaflet zemljevidu.
-            const populatedProperty = await PropertyModel.findById(savedProperty._id)
-                                                         .populate('location')
-                                                         .exec();
-            
-            // PROŽENJE REALNOČASOVNEGA DOGODKA
-            if (req.io) {
-                req.io.emit('propertyCreated', populatedProperty);
-            }
-
-            return res.status(201).json(populatedProperty);
-        } catch (err) {
-            return res.status(500).json({
-                message: 'Error when creating Property',
-                error: err
+            const property = new PropertyModel({
+                id: req.body.id,
+                location: req.body.location,
+                type: req.body.type,
+                size: req.body.size,
+                price: req.body.price,
+                buildYear: req.body.buildYear,
+                description: req.body.description,
+                pictures: req.body.pictures,
+                dateOfPosting: req.body.dateOfPosting || new Date(),
+                propertyLink: req.body.propertyLink
             });
+            const saved = await property.save();
+            const populated = await PropertyModel.findById(saved._id).populate('location');
+
+            if (req.io) req.io.emit('propertyCreated', populated);
+
+            return res.status(201).json(populated);
+        } catch (err) {
+            return res.status(500).json({ message: 'Error when creating Property', error: err });
         }
     },
 
-    /**
-     * PropertyController.update()
-     */
     update: async function (req, res) {
-        var id = req.params.id;
-
         try {
-            var Property = await PropertyModel.findOne({_id: id}).exec();
-            if (!Property) {
-                return res.status(404).json({
-                    message: 'No such Property'
-                });
-            }
+            const property = await PropertyModel.findById(req.params.id);
+            if (!property) return res.status(404).json({ message: 'No such Property' });
 
-            // Posodobitev polj
-            Property.id = req.body.id ? req.body.id : Property.id;
-            Property.location = req.body.location ? req.body.location : Property.location;
-            Property.type = req.body.type ? req.body.type : Property.type;
-            Property.size = req.body.size ? req.body.size : Property.size;
-            Property.price = req.body.price ? req.body.price : Property.price;
-            Property.buildYear = req.body.buildYear ? req.body.buildYear : Property.buildYear;
-            Property.description = req.body.description ? req.body.description : Property.description;
-            Property.pictures = req.body.pictures ? req.body.pictures : Property.pictures;
-            Property.dateOfPosting = req.body.dateOfPosting ? req.body.dateOfPosting : Property.dateOfPosting;
-            Property.propertyLink = req.body.propertyLink ? req.body.propertyLink : Property.propertyLink;
-
-            var updatedProperty = await Property.save();
-            return res.json(updatedProperty);
-        } catch (err) {
-            return res.status(500).json({
-                message: 'Error when updating Property.',
-                error: err
+            const fields = ['id', 'location', 'type', 'size', 'price', 'buildYear', 'description', 'pictures', 'dateOfPosting', 'propertyLink'];
+            fields.forEach(f => {
+                if (req.body[f] !== undefined) property[f] = req.body[f];
             });
+
+            const saved = await property.save();
+            const populated = await PropertyModel.findById(saved._id).populate('location');
+
+            if (req.io) req.io.emit('propertyUpdated', populated);
+
+            return res.json(populated);
+        } catch (err) {
+            return res.status(500).json({ message: 'Error when updating Property.', error: err });
         }
     },
 
-    /**
-     * PropertyController.remove()
-     */
     remove: async function (req, res) {
-        var id = req.params.id;
-
         try {
-            // POPRAVLJENO: findByIdAndRemove je bil v Mongoose odstranjen/zastaran, uporabimo findByIdAndDelete
-            var Property = await PropertyModel.findByIdAndDelete(id).exec();
+            const property = await PropertyModel.findByIdAndDelete(req.params.id);
+            if (req.io && property) req.io.emit('propertyDeleted', { _id: property._id });
             return res.status(204).json();
         } catch (err) {
-            return res.status(500).json({
-                message: 'Error when deleting the Property.',
-                error: err
-            });
+            return res.status(500).json({ message: 'Error when deleting the Property.', error: err });
         }
     }
 };
