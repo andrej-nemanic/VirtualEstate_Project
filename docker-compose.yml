@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  web-service:
+    build: ./WebService
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=vaš_povezovalni_niz_do_baze_v_oblaku
+    restart: always
+
+  web-client:
+    build: ./WebClient
+    ports:
+      - "80:80"
+    restart: always
+    depends_on:
+      - web-service
