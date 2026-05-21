@@ -1,26 +1,32 @@
 package com.example.desktopapplication.models
 
 data class PropertyIngestDto(
-    val address: String,
+    val region: String,
     val city: String,
-    val type: String,
+    val neighborhood: String,
+    val offerType: String,
+    val propertyType: String,
     val size: Double,
     val price: Double,
-    val buildYear: Int,
     val description: String? = null,
+    val propertyLink: String? = null,
+    val imageUrl: String? = null,
     val lat: Double? = null,
     val lng: Double? = null
 )
 
 data class PropertyResponseDto(
     val _id: String? = null,
-    val address: String? = null,
+    val region: String? = null,
     val city: String? = null,
-    val type: String? = null,
+    val neighborhood: String? = null,
+    val offerType: String? = null,
+    val propertyType: String? = null,
     val size: Double? = null,
     val price: Double? = null,
-    val buildYear: Int? = null,
-    val description: String? = null
+    val description: String? = null,
+    val propertyLink: String? = null,
+    val imageUrl: String? = null
 )
 
 object PropertyMapper {
@@ -30,13 +36,16 @@ object PropertyMapper {
         lng: Double? = null,
         lat: Double? = null
     ): PropertyIngestDto = PropertyIngestDto(
-        address = property.address,
+        region = property.region,
         city = property.city,
-        type = property.type,
+        neighborhood = property.neighborhood,
+        offerType = property.offerType,
+        propertyType = property.propertyType,
         size = property.size,
         price = property.price,
-        buildYear = property.buildYear,
         description = property.description,
+        propertyLink = property.propertyLink,
+        imageUrl = property.imageUrl,
         lng = lng,
         lat = lat
     )
@@ -44,12 +53,15 @@ object PropertyMapper {
     fun fromResponse(dto: PropertyResponseDto, localId: Int): Property = Property(
         id = localId,
         apiId = dto._id,
-        address = dto.address ?: "",
+        region = dto.region ?: "",
         city = dto.city ?: "",
-        type = dto.type ?: "",
+        neighborhood = dto.neighborhood ?: "",
+        offerType = dto.offerType ?: "Prodaja",
+        propertyType = dto.propertyType ?: "",
         size = dto.size ?: 0.0,
         price = dto.price ?: 0.0,
-        buildYear = dto.buildYear ?: 0,
-        description = dto.description
+        description = dto.description,
+        propertyLink = dto.propertyLink,
+        imageUrl = dto.imageUrl
     )
 }

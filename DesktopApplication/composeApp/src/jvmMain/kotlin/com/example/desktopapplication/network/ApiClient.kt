@@ -17,10 +17,12 @@ object ApiClient {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    val properties: PropertyApiService = Retrofit.Builder()
+    private val retrofit: Retrofit = Retrofit.Builder()
         .baseUrl(BASE_URL)
         .client(okHttp)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
-        .create(PropertyApiService::class.java)
+
+    val properties: PropertyApiService = retrofit.create(PropertyApiService::class.java)
+    val users: UserApiService = retrofit.create(UserApiService::class.java)
 }

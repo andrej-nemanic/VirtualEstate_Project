@@ -1,4 +1,5 @@
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import { useEffect } from 'react';
 
@@ -13,9 +14,11 @@ const typeColors = {
   'Stanovanje': '#f59e0b',
   'Hiša': '#16a34a',
   'Vikend': '#10b981',
+  'Počitniški objekt': '#10b981',
   'Poslovni prostor': '#0ea5e9',
   'Garaža': '#64748b',
-  'Zemljišče': '#6366f1'
+  'Parcela': '#6366f1',
+  'Soba': '#ec4899'
 };
 
 function makeIcon(type) {
@@ -57,22 +60,43 @@ export default function PropertyMap({ properties }) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <FitBounds properties={properties} />
-        {properties.map(p => {
-          if (!hasRealCoords(p)) return null;
-          const coords = p.coordinates.coordinates;
-          return (
-            <Marker key={p._id} position={[coords[1], coords[0]]} icon={makeIcon(p.type)}>
-              <Popup>
-                <strong>{p.type.toUpperCase()}</strong><br />
-                {p.address}, {p.city}<br />
-                Cena: <b>{p.price?.toLocaleString()} €</b><br />
-                Velikost: {p.size} m²<br />
-                Leto: {p.buildYear}<br />
-                {p.description && <em>{p.description}</em>}
-              </Popup>
-            </Marker>
-          );
-        })}
+        <MarkerClusterGroup
+          chunkedLoading
+          showCoverageOnHover={false}
+          spiderfyOnMaxZoom={true}
+          maxClusterRadius={40}
+        >
+          {properties.map(p => {
+            if (!hasRealCoords(p)) return null;
+            const coords = p.coordinates.coordinates;
+            return (
+              <Marker key={p._id} position={[coords[1], coords[0]]} icon={makeIcon(p.propertyType)}>
+                <Popup>
+                  <div style={{ minWidth: 200 }}>
+                    {p.imageUrl && (
+                      <img
+                        src={p.imageUrl}
+                        alt=""
+                        style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 4, marginBottom: 6 }}
+                      />
+                    )}
+                    <strong>{p.propertyType} — {p.offerType}</strong><br />
+                    {p.neighborhood ? `${p.neighborhood}, ${p.city}` : p.city}
+                    {p.region && <> ({p.region})</>}<br />
+                    Cena: <b>{p.price?.toLocaleString()} €</b><br />
+                    Velikost: {p.size} m²<br />
+                    {p.description && <div style={{ marginTop: 4, fontStyle: 'italic', fontSize: 12 }}>{p.description.substring(0, 120)}{p.description.length > 120 ? '…' : ''}</div>}
+                    {p.propertyLink && (
+                      <a href={p.propertyLink} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 6 }}>
+                        Odpri oglas →
+                      </a>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+        </MarkerClusterGroup>
       </MapContainer>
     </div>
   );

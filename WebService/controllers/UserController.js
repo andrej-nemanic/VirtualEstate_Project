@@ -28,11 +28,9 @@ module.exports = {
         try {
             const user = new UserModel({
                 name: req.body.name,
-                id: req.body.id,
-                personalData: req.body.personalData,
                 email: req.body.email,
                 password: req.body.password,
-                type: req.body.type
+                isAdmin: req.body.isAdmin === true
             });
             const saved = await user.save();
             const obj = saved.toObject();
@@ -50,11 +48,9 @@ module.exports = {
             if (!user) return res.status(404).json({ message: 'No such User' });
 
             if (req.body.name !== undefined) user.name = req.body.name;
-            if (req.body.id !== undefined) user.id = req.body.id;
-            if (req.body.personalData !== undefined) user.personalData = req.body.personalData;
             if (req.body.email !== undefined) user.email = req.body.email;
             if (req.body.password !== undefined) user.password = req.body.password;
-            if (req.body.type !== undefined) user.type = req.body.type;
+            if (req.body.isAdmin !== undefined) user.isAdmin = req.body.isAdmin === true;
 
             const saved = await user.save();
             const obj = saved.toObject();
@@ -85,7 +81,7 @@ module.exports = {
                     return res.status(401).json({ message: 'Napačna e-pošta ali geslo.' });
                 }
                 const token = jwt.sign(
-                    { id: user._id, email: user.email, type: user.type },
+                    { id: user._id, email: user.email, isAdmin: user.isAdmin },
                     JWT_SECRET,
                     { expiresIn: '24h' }
                 );
@@ -96,7 +92,7 @@ module.exports = {
                         id: user._id,
                         name: user.name,
                         email: user.email,
-                        type: user.type
+                        isAdmin: user.isAdmin
                     }
                 });
             });
@@ -112,6 +108,55 @@ module.exports = {
             return res.json(user);
         } catch (err) {
             return res.status(500).json({ message: 'Error.', error: err });
+        }
+    },
+
+    ingestCreate: async function (req, res) {
+        try {
+            const body = req.body || {};
+            const user = new UserModel({
+                name: body.name,
+                email: body.email,
+                password: body.password || 'changeme',
+                isAdmin: body.isAdmin === true
+            });
+            const saved = await user.save();
+            const obj = saved.toObject();
+            delete obj.password;
+            return res.status(201).json(obj);
+        } catch (err) {
+            console.error('Ingest user create error:', err);
+            return res.status(500).json({ message: 'Error when ingesting User.', error: err });
+        }
+    },
+
+    ingestUpdate: async function (req, res) {
+        try {
+            const body = req.body || {};
+            const user = await UserModel.findById(req.params.id);
+            if (!user) return res.status(404).json({ message: 'No such User' });
+
+            if (body.name !== undefined) user.name = body.name;
+            if (body.email !== undefined) user.email = body.email;
+            if (body.isAdmin !== undefined) user.isAdmin = body.isAdmin === true;
+            if (body.password) user.password = body.password;
+
+            const saved = await user.save();
+            const obj = saved.toObject();
+            delete obj.password;
+            return res.json(obj);
+        } catch (err) {
+            console.error('Ingest user update error:', err);
+            return res.status(500).json({ message: 'Error when updating User.', error: err });
+        }
+    },
+
+    ingestRemove: async function (req, res) {
+        try {
+            await UserModel.findByIdAndDelete(req.params.id);
+            return res.status(204).json();
+        } catch (err) {
+            return res.status(500).json({ message: 'Error when deleting User.', error: err });
         }
     }
 };

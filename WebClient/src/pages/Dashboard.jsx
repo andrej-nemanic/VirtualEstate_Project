@@ -32,7 +32,7 @@ export default function Dashboard() {
   useEffect(() => {
     const onCreate = (p) => {
       setProperties(prev => [p, ...prev]);
-      setToast(`Nova nepremičnina: ${p.type} v ${p.city || ''}`);
+      setToast(`Nova nepremičnina: ${p.propertyType} v ${p.city || ''}`);
       setTimeout(() => setToast(''), 3500);
     };
     const onUpdate = (p) => {
@@ -78,16 +78,34 @@ export default function Dashboard() {
 
           <h2>Seznam ({properties.length})</h2>
           <div className="grid-3">
-            {properties.map(p => (
-              <div key={p._id} className="property-card">
-                <span className={`badge ${p.type}`}>{p.type}</span>
-                <h3>{p.address || 'Neznan naslov'}</h3>
-                <div className="meta">{p.city}</div>
-                <div className="price">{p.price?.toLocaleString()} €</div>
-                <div className="meta">{p.size} m² • {p.buildYear}</div>
-                {p.description && <div className="meta" style={{ marginTop: 6 }}>{p.description}</div>}
-              </div>
-            ))}
+            {properties.map(p => {
+              const inner = (
+                <>
+                  {p.imageUrl && <img src={p.imageUrl} alt="" style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />}
+                  <span className="badge">{p.propertyType}</span> <span className="badge" style={{ marginLeft: 4 }}>{p.offerType}</span>
+                  <h3>{p.neighborhood ? `${p.neighborhood}, ${p.city}` : p.city}</h3>
+                  <div className="meta">{p.region}</div>
+                  <div className="price">{p.price?.toLocaleString()} €</div>
+                  <div className="meta">{p.size} m²</div>
+                  {p.description && <div className="meta" style={{ marginTop: 6 }}>{p.description}</div>}
+                  {p.propertyLink && <div className="meta" style={{ marginTop: 6 }}>Odpri oglas →</div>}
+                </>
+              );
+              return p.propertyLink ? (
+                <a
+                  key={p._id}
+                  href={p.propertyLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="property-card"
+                  style={{ color: 'inherit', textDecoration: 'none', display: 'block', cursor: 'pointer' }}
+                >
+                  {inner}
+                </a>
+              ) : (
+                <div key={p._id} className="property-card">{inner}</div>
+              );
+            })}
             {properties.length === 0 && <div className="card">Ni rezultatov.</div>}
           </div>
         </>

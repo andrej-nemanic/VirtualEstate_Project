@@ -19,7 +19,7 @@ export default function App() {
           <PrivateRoute><Dashboard /></PrivateRoute>
         } />
         <Route path="/admin" element={
-          <PrivateRoute><Admin /></PrivateRoute>
+          <PrivateRoute adminOnly><Admin /></PrivateRoute>
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

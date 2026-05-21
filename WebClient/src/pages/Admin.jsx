@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react';
 import { propertyApi } from '../api/client.js';
 
+const PROPERTY_TYPES = ['Stanovanje', 'Hiša', 'Vikend', 'Poslovni prostor', 'Garaža', 'Parcela', 'Počitniški objekt', 'Soba'];
+const OFFER_TYPES = ['Prodaja', 'Oddaja'];
+
 const emptyProperty = {
-  address: '',
+  region: '',
   city: '',
-  type: 'Stanovanje',
+  neighborhood: '',
+  offerType: 'Prodaja',
+  propertyType: 'Stanovanje',
   size: '',
   price: '',
-  buildYear: '',
   description: '',
+  propertyLink: '',
+  imageUrl: '',
   lng: '',
   lat: ''
 };
@@ -41,13 +47,16 @@ export default function Admin() {
     setError(''); setSuccess('');
     try {
       const data = {
-        address: form.address,
+        region: form.region,
         city: form.city,
-        type: form.type,
+        neighborhood: form.neighborhood,
+        offerType: form.offerType,
+        propertyType: form.propertyType,
         size: Number(form.size),
         price: Number(form.price),
-        buildYear: Number(form.buildYear),
-        description: form.description
+        description: form.description,
+        propertyLink: form.propertyLink,
+        imageUrl: form.imageUrl
       };
       if (form.lng !== '' && form.lat !== '') {
         data.lng = parseFloat(form.lng);
@@ -82,13 +91,16 @@ export default function Admin() {
   const startEdit = (p) => {
     setEditingId(p._id);
     setForm({
-      address: p.address || '',
+      region: p.region || '',
       city: p.city || '',
-      type: p.type || 'Stanovanje',
+      neighborhood: p.neighborhood || '',
+      offerType: p.offerType || 'Prodaja',
+      propertyType: p.propertyType || 'Stanovanje',
       size: p.size ?? '',
       price: p.price ?? '',
-      buildYear: p.buildYear ?? '',
       description: p.description || '',
+      propertyLink: p.propertyLink || '',
+      imageUrl: p.imageUrl || '',
       lng: p.coordinates?.coordinates?.[0] ?? '',
       lat: p.coordinates?.coordinates?.[1] ?? ''
     });
@@ -106,22 +118,27 @@ export default function Admin() {
         <form onSubmit={submit}>
           <div className="grid-2">
             <div className="form-group">
-              <label>Naslov</label>
-              <input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} required />
+              <label>Regija</label>
+              <input value={form.region} onChange={e => setForm({ ...form, region: e.target.value })} required />
             </div>
             <div className="form-group">
-              <label>Mesto</label>
+              <label>Mesto / občina</label>
               <input value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} required />
             </div>
             <div className="form-group">
-              <label>Tip</label>
-              <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
-                <option value="Stanovanje">Stanovanje</option>
-                <option value="Hiša">Hiša</option>
-                <option value="Vikend">Vikend</option>
-                <option value="Poslovni prostor">Poslovni prostor</option>
-                <option value="Garaža">Garaža</option>
-                <option value="Zemljišče">Zemljišče</option>
+              <label>Naselje (opcijsko)</label>
+              <input value={form.neighborhood} onChange={e => setForm({ ...form, neighborhood: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label>Tip ponudbe</label>
+              <select value={form.offerType} onChange={e => setForm({ ...form, offerType: e.target.value })}>
+                {OFFER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Vrsta nepremičnine</label>
+              <select value={form.propertyType} onChange={e => setForm({ ...form, propertyType: e.target.value })}>
+                {PROPERTY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div className="form-group">
@@ -133,12 +150,16 @@ export default function Admin() {
               <input type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} required />
             </div>
             <div className="form-group">
-              <label>Leto izgradnje</label>
-              <input type="number" value={form.buildYear} onChange={e => setForm({ ...form, buildYear: e.target.value })} />
-            </div>
-            <div className="form-group">
               <label>Opis</label>
               <input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label>Povezava do oglasa (URL)</label>
+              <input value={form.propertyLink} onChange={e => setForm({ ...form, propertyLink: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label>URL slike</label>
+              <input value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} />
             </div>
             <div className="form-group">
               <label>Geo. dolžina (lng) — opcijsko</label>
@@ -164,18 +185,17 @@ export default function Admin() {
         <h2>Vse nepremičnine ({properties.length})</h2>
         <table>
           <thead>
-            <tr><th>Naslov</th><th>Mesto</th><th>Tip</th><th>Velikost</th><th>Cena</th><th>Leto</th><th>Koordinate</th><th></th></tr>
+            <tr><th>Regija</th><th>Mesto / Naselje</th><th>Ponudba</th><th>Tip</th><th>m²</th><th>Cena</th><th></th></tr>
           </thead>
           <tbody>
             {properties.map(p => (
               <tr key={p._id}>
-                <td>{p.address}</td>
-                <td>{p.city}</td>
-                <td><span className={`badge ${p.type}`}>{p.type}</span></td>
+                <td>{p.region}</td>
+                <td>{p.neighborhood ? `${p.neighborhood}, ${p.city}` : p.city}</td>
+                <td>{p.offerType}</td>
+                <td><span className="badge">{p.propertyType}</span></td>
                 <td>{p.size} m²</td>
                 <td>{p.price?.toLocaleString()} €</td>
-                <td>{p.buildYear}</td>
-                <td>{p.coordinates?.coordinates?.join(', ')}</td>
                 <td>
                   <button onClick={() => startEdit(p)} style={{ marginRight: 6 }}>Uredi</button>
                   <button className="danger" onClick={() => remove(p._id)}>Briši</button>

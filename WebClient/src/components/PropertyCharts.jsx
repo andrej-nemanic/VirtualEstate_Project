@@ -5,16 +5,16 @@ const COLORS = ['#16a34a', '#f59e0b', '#6366f1', '#ec4899', '#06b6d4'];
 export default function PropertyCharts({ properties }) {
   const byType = Object.entries(
     properties.reduce((acc, p) => {
-      acc[p.type] = (acc[p.type] || 0) + 1;
+      acc[p.propertyType] = (acc[p.propertyType] || 0) + 1;
       return acc;
     }, {})
   ).map(([type, count]) => ({ type, count }));
 
   const avgPriceByType = Object.entries(
     properties.reduce((acc, p) => {
-      if (!acc[p.type]) acc[p.type] = { sum: 0, count: 0 };
-      acc[p.type].sum += p.price || 0;
-      acc[p.type].count += 1;
+      if (!acc[p.propertyType]) acc[p.propertyType] = { sum: 0, count: 0 };
+      acc[p.propertyType].sum += p.price || 0;
+      acc[p.propertyType].count += 1;
       return acc;
     }, {})
   ).map(([type, { sum, count }]) => ({
@@ -24,7 +24,7 @@ export default function PropertyCharts({ properties }) {
 
   const scatter = properties
     .filter(p => p.size && p.price)
-    .map(p => ({ size: p.size, price: p.price, type: p.type }));
+    .map(p => ({ size: p.size, price: p.price, type: p.propertyType }));
 
   return (
     <div className="grid-3">

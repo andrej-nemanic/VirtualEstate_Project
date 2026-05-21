@@ -6,7 +6,7 @@ export default function Register() {
   const { register, loading } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    name: '', email: '', password: '', type: 'buyer'
+    name: '', email: '', password: ''
   });
   const [error, setError] = useState('');
 
@@ -36,13 +36,6 @@ export default function Register() {
         <div className="form-group">
           <label>Geslo</label>
           <input name="password" type="password" value={form.password} onChange={handleChange} required minLength={4} />
-        </div>
-        <div className="form-group">
-          <label>Tip uporabnika</label>
-          <select name="type" value={form.type} onChange={handleChange}>
-            <option value="buyer">Kupec</option>
-            <option value="owner">Lastnik</option>
-          </select>
         </div>
         <button type="submit" disabled={loading} style={{ width: '100%' }}>
           {loading ? 'Registriram...' : 'Registracija'}
