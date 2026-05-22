@@ -14,7 +14,7 @@ var propertyRoutes = require('./routes/PropertyRoutes');
 
 
 
-const dbUrl = process.env.DATABASE_URL || 'mongodb://127.0.0.1:27017/virtual_estate';
+const dbUrl = process.env.DATABASE_URL;
 
 mongoose.connect(dbUrl)
   .then(() => console.log('Uspešno povezan na MongoDB!'))
