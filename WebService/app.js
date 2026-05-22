@@ -11,7 +11,7 @@ var userRoutes = require('./routes/UserRoutes');
 var propertyRoutes = require('./routes/PropertyRoutes');
 
 //mongoose.connect('mongodb://127.0.0.1:27017/virtual_estate');
-
+//komentar
 
 
 const dbUrl = process.env.DATABASE_URL;
