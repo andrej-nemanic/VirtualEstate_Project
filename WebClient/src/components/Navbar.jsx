@@ -16,11 +16,11 @@ export default function Navbar() {
       <div className="links">
         <NavLink to="/" end>Domov</NavLink>
         <NavLink to="/dashboard">Nadzorna plošča</NavLink>
-        {user && <NavLink to="/admin">Admin</NavLink>}
+        {user?.isAdmin && <NavLink to="/admin">Admin</NavLink>}
       </div>
       {user ? (
         <>
-          <span className="user">{user.name} ({user.type})</span>
+          <span className="user">{user.name}{user.isAdmin ? ' (admin)' : ''}</span>
           <button className="secondary" onClick={handleLogout}>Odjava</button>
         </>
       ) : (

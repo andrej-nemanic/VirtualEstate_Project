@@ -1,44 +1,23 @@
 var PropertyModel = require('../models/PropertyModel.js');
 var Geocoder = require('../services/Geocoder.js');
 
-const TYPE_ALIASES = {
-    'stanovanje': 'apartment',
-    'apartment': 'apartment',
-    'apartma': 'apartment',
-    'vikend': 'apartment',
-    'poslovni prostor': 'apartment',
-    'garaža': 'apartment',
-    'garaza': 'apartment',
-    'hiša': 'house',
-    'hisa': 'house',
-    'house': 'house',
-    'zemljišče': 'land',
-    'zemljisce': 'land',
-    'land': 'land',
-    'condominium': 'condominium'
-};
+const PROP_FIELDS = [
+    'region', 'city', 'neighborhood', 'offerType', 'propertyType',
+    'size', 'price', 'description', 'propertyLink', 'imageUrl'
+];
 
-function normalizeType(raw) {
-    if (!raw) return 'house';
-    const key = String(raw).trim().toLowerCase();
-    return TYPE_ALIASES[key] || 'house';
-}
-
-async function buildCoordinates({ address, city, lat, lng }) {
+async function buildCoordinates({ region, city, neighborhood, lat, lng }) {
     if (typeof lng === 'number' && typeof lat === 'number') {
         return { type: 'Point', coordinates: [lng, lat] };
     }
-    const hit = await Geocoder.geocode(address, city);
+    const hit = await Geocoder.geocode({ region, city, neighborhood });
     if (hit) return { type: 'Point', coordinates: [hit.lng, hit.lat] };
     return { type: 'Point', coordinates: [0, 0] };
 }
 
-function applyCommonFields(property, body) {
-    if (body.address !== undefined) property.address = body.address;
-    if (body.city !== undefined) property.city = body.city;
-    if (body.type !== undefined) property.type = normalizeType(body.type);
-    ['size', 'price', 'buildYear', 'description', 'pictures', 'dateOfPosting', 'propertyLink'].forEach(f => {
-        if (body[f] !== undefined) property[f] = body[f];
+function applyFields(target, body) {
+    PROP_FIELDS.forEach(f => {
+        if (body[f] !== undefined) target[f] = body[f];
     });
 }
 
@@ -47,7 +26,10 @@ module.exports = {
     list: async function (req, res) {
         try {
             const filter = {};
-            if (req.query.type) filter.type = req.query.type;
+            if (req.query.propertyType) filter.propertyType = { $regex: req.query.propertyType, $options: 'i' };
+            if (req.query.offerType) filter.offerType = req.query.offerType;
+            if (req.query.city) filter.city = req.query.city;
+            if (req.query.region) filter.region = req.query.region;
             if (req.query.minPrice || req.query.maxPrice) {
                 filter.price = {};
                 if (req.query.minPrice) filter.price.$gte = parseFloat(req.query.minPrice);
@@ -106,22 +88,10 @@ module.exports = {
         try {
             const body = req.body || {};
             const coords = await buildCoordinates({
-                address: body.address, city: body.city, lat: body.lat, lng: body.lng
+                region: body.region, city: body.city, neighborhood: body.neighborhood,
+                lat: body.lat, lng: body.lng
             });
-            const property = new PropertyModel({
-                id: body.id,
-                address: body.address,
-                city: body.city,
-                coordinates: coords,
-                type: normalizeType(body.type),
-                size: body.size,
-                price: body.price,
-                buildYear: body.buildYear,
-                description: body.description,
-                pictures: body.pictures,
-                dateOfPosting: body.dateOfPosting || new Date(),
-                propertyLink: body.propertyLink
-            });
+            const property = new PropertyModel({ ...pick(body, PROP_FIELDS), coordinates: coords });
             const saved = await property.save();
             if (req.io) req.io.emit('propertyCreated', saved);
             return res.status(201).json(saved);
@@ -137,16 +107,17 @@ module.exports = {
             if (!property) return res.status(404).json({ message: 'No such Property' });
 
             const body = req.body || {};
-            const addressChanged = body.address !== undefined && body.address !== property.address;
-            const cityChanged = body.city !== undefined && body.city !== property.city;
+            const locationChanged = ['region', 'city', 'neighborhood'].some(
+                f => body[f] !== undefined && body[f] !== property[f]
+            );
 
-            applyCommonFields(property, body);
+            applyFields(property, body);
 
             if (typeof body.lng === 'number' && typeof body.lat === 'number') {
                 property.coordinates = { type: 'Point', coordinates: [body.lng, body.lat] };
-            } else if (addressChanged || cityChanged) {
+            } else if (locationChanged) {
                 property.coordinates = await buildCoordinates({
-                    address: property.address, city: property.city
+                    region: property.region, city: property.city, neighborhood: property.neighborhood
                 });
             }
 
@@ -173,22 +144,10 @@ module.exports = {
         try {
             const body = req.body || {};
             const coords = await buildCoordinates({
-                address: body.address, city: body.city, lat: body.lat, lng: body.lng
+                region: body.region, city: body.city, neighborhood: body.neighborhood,
+                lat: body.lat, lng: body.lng
             });
-            const property = await PropertyModel.create({
-                id: body.id,
-                address: body.address,
-                city: body.city,
-                coordinates: coords,
-                type: normalizeType(body.type),
-                size: body.size,
-                price: body.price,
-                buildYear: body.buildYear,
-                description: body.description,
-                pictures: body.pictures || [],
-                dateOfPosting: body.dateOfPosting || new Date(),
-                propertyLink: body.propertyLink
-            });
+            const property = await PropertyModel.create({ ...pick(body, PROP_FIELDS), coordinates: coords });
             if (req.io) req.io.emit('propertyCreated', property);
             return res.status(201).json(property);
         } catch (err) {
@@ -203,16 +162,17 @@ module.exports = {
             const property = await PropertyModel.findById(req.params.id);
             if (!property) return res.status(404).json({ message: 'No such Property' });
 
-            const addressChanged = body.address !== undefined && body.address !== property.address;
-            const cityChanged = body.city !== undefined && body.city !== property.city;
+            const locationChanged = ['region', 'city', 'neighborhood'].some(
+                f => body[f] !== undefined && body[f] !== property[f]
+            );
 
-            applyCommonFields(property, body);
+            applyFields(property, body);
 
             if (typeof body.lng === 'number' && typeof body.lat === 'number') {
                 property.coordinates = { type: 'Point', coordinates: [body.lng, body.lat] };
-            } else if (addressChanged || cityChanged) {
+            } else if (locationChanged) {
                 property.coordinates = await buildCoordinates({
-                    address: property.address, city: property.city
+                    region: property.region, city: property.city, neighborhood: property.neighborhood
                 });
             }
 
@@ -249,13 +209,15 @@ module.exports = {
             let updated = 0;
             const failures = [];
             for (const p of candidates) {
-                const hit = await Geocoder.geocode(p.address, p.city);
+                const hit = await Geocoder.geocode({
+                    region: p.region, city: p.city, neighborhood: p.neighborhood
+                });
                 if (hit) {
                     p.coordinates = { type: 'Point', coordinates: [hit.lng, hit.lat] };
                     await p.save();
                     updated++;
                 } else {
-                    failures.push({ _id: p._id, address: p.address, city: p.city });
+                    failures.push({ _id: p._id, region: p.region, city: p.city, neighborhood: p.neighborhood });
                 }
             }
             return res.json({ checked: candidates.length, updated, failed: failures });
@@ -265,3 +227,9 @@ module.exports = {
         }
     }
 };
+
+function pick(obj, keys) {
+    const out = {};
+    keys.forEach(k => { if (obj[k] !== undefined) out[k] = obj[k]; });
+    return out;
+}

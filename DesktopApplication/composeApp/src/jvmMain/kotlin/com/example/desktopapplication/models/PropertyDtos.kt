@@ -1,79 +1,81 @@
 package com.example.desktopapplication.models
 
 data class PropertyIngestDto(
-    val address: String,
+    val region: String,
     val city: String,
-    val type: String,
+    val neighborhood: String,
+    val offerType: String,
+    val propertyType: String,
     val size: Double,
     val price: Double,
-    val buildYear: Int,
     val description: String? = null,
+    val propertyLink: String? = null,
+    val imageUrl: String? = null,
     val lat: Double? = null,
     val lng: Double? = null
 )
 
+data class CoordinatesDto(
+    val type: String? = null,
+    val coordinates: List<Double>? = null
+)
+
 data class PropertyResponseDto(
     val _id: String? = null,
-    val address: String? = null,
+    val region: String? = null,
     val city: String? = null,
-    val type: String? = null,
+    val neighborhood: String? = null,
+    val offerType: String? = null,
+    val propertyType: String? = null,
     val size: Double? = null,
     val price: Double? = null,
-    val buildYear: Int? = null,
-    val description: String? = null
+    val description: String? = null,
+    val propertyLink: String? = null,
+    val imageUrl: String? = null,
+    val coordinates: CoordinatesDto? = null
 )
 
 object PropertyMapper {
 
-    private val toBackend = mapOf(
-        "stanovanje" to "apartment",
-        "apartment" to "apartment",
-        "apartma" to "apartment",
-        "vikend" to "apartment",
-        "poslovni prostor" to "apartment",
-        "garaža" to "apartment",
-        "garaza" to "apartment",
-        "hiša" to "house",
-        "hisa" to "house",
-        "house" to "house",
-        "zemljišče" to "land",
-        "zemljisce" to "land",
-        "land" to "land",
-        "condominium" to "condominium"
-    )
-
-    private val toDisplay = mapOf(
-        "apartment" to "Stanovanje",
-        "house" to "Hiša",
-        "land" to "Zemljišče",
-        "condominium" to "Apartma"
-    )
-
-    fun normalizeForBackend(type: String?): String =
-        toBackend[type?.trim()?.lowercase()] ?: "house"
-
-    fun displayFromBackend(type: String?): String =
-        toDisplay[type?.trim()?.lowercase()] ?: (type ?: "")
-
-    fun toIngest(property: Property): PropertyIngestDto = PropertyIngestDto(
-        address = property.address,
+    fun toIngest(
+        property: Property,
+        lng: Double? = null,
+        lat: Double? = null
+    ): PropertyIngestDto = PropertyIngestDto(
+        region = property.region,
         city = property.city,
-        type = normalizeForBackend(property.type),
+        neighborhood = property.neighborhood,
+        offerType = property.offerType,
+        propertyType = property.propertyType,
         size = property.size,
         price = property.price,
-        buildYear = property.buildYear,
-        description = property.description
+        description = property.description,
+        propertyLink = property.propertyLink,
+        imageUrl = property.imageUrl,
+        lng = lng ?: property.lng,
+        lat = lat ?: property.lat
     )
 
-    fun fromResponse(dto: PropertyResponseDto, localId: Int): Property = Property(
-        id = localId,
-        apiId = dto._id,
-        address = dto.address ?: "",
-        city = dto.city ?: "",
-        type = displayFromBackend(dto.type),
-        size = dto.size ?: 0.0,
-        price = dto.price ?: 0.0,
-        buildYear = dto.buildYear ?: 0,
-        description = dto.description
-    )
+    fun fromResponse(dto: PropertyResponseDto, localId: Int): Property {
+        val coords = dto.coordinates?.coordinates
+        val lng = coords?.getOrNull(0)
+        val lat = coords?.getOrNull(1)
+        val hasReal = lng != null && lat != null && !(lng == 0.0 && lat == 0.0)
+        return Property(
+            id = localId,
+            apiId = dto._id,
+            region = dto.region ?: "",
+            city = dto.city ?: "",
+            neighborhood = dto.neighborhood ?: "",
+            offerType = dto.offerType ?: "Prodaja",
+            propertyType = dto.propertyType ?: "",
+            size = dto.size ?: 0.0,
+            price = dto.price ?: 0.0,
+            description = dto.description,
+            propertyLink = dto.propertyLink,
+            imageUrl = dto.imageUrl,
+            lng = if (hasReal) lng else null,
+            lat = if (hasReal) lat else null
+        )
+    }
 }

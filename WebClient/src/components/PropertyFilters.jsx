@@ -4,13 +4,15 @@ export default function PropertyFilters({ filters, setFilters, onReset }) {
   return (
     <div className="filters">
       <div>
-        <label style={{ fontSize: 12, color: '#6b7280' }}>Tip</label>
-        <select value={filters.type || ''} onChange={e => update('type', e.target.value)}>
-          <option value="">Vsi</option>
-          <option value="house">Hiša</option>
-          <option value="apartment">Stanovanje</option>
-          <option value="land">Zemljišče</option>
-          <option value="condominium">Kondominij</option>
+        <label style={{ fontSize: 12, color: '#6b7280' }}>Vrsta</label>
+        <input value={filters.propertyType || ''} onChange={e => update('propertyType', e.target.value)} placeholder="vse" />
+      </div>
+      <div>
+        <label style={{ fontSize: 12, color: '#6b7280' }}>Ponudba</label>
+        <select value={filters.offerType || ''} onChange={e => update('offerType', e.target.value)}>
+          <option value="">Vse</option>
+          <option value="Prodaja">Prodaja</option>
+          <option value="Oddaja">Oddaja</option>
         </select>
       </div>
       <div>

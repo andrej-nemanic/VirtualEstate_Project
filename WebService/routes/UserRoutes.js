@@ -8,6 +8,12 @@ router.post('/register', UserController.create);
 router.post('/', UserController.create);
 
 router.get('/me', authMiddleware, UserController.me);
+
+router.get('/ingest', UserController.list);
+router.post('/ingest', UserController.ingestCreate);
+router.put('/ingest/:id', UserController.ingestUpdate);
+router.delete('/ingest/:id', UserController.ingestRemove);
+
 router.get('/', authMiddleware, UserController.list);
 router.get('/:id', authMiddleware, UserController.show);
 router.put('/:id', authMiddleware, UserController.update);

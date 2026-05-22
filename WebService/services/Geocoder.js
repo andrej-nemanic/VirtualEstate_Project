@@ -2,13 +2,6 @@ const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 const USER_AGENT = 'VirtualEstate/1.0 (FERI student project)';
 const MIN_INTERVAL_MS = 1100;
 
-const REGION_HINTS = new Set([
-    'gorenjska', 'štajerska', 'stajerska', 'primorska', 'dolenjska',
-    'koroška', 'koroska', 'prekmurje', 'notranjska', 'bela krajina',
-    'goriška', 'goriska', 'zasavje', 'posavje', 'savinjska', 'osrednjeslovenska',
-    'jugovzhodna slovenija', 'obalno-kraška', 'obalno-kraska', 'pomurska'
-]);
-
 const cache = new Map();
 let lastCallAt = 0;
 
@@ -24,45 +17,30 @@ async function throttle() {
     lastCallAt = Date.now();
 }
 
-function tokens(str) {
-    return String(str || '')
-        .split(',')
-        .map(s => s.trim())
-        .filter(Boolean);
-}
-
 function dedupeJoin(parts) {
     const seen = new Set();
     const out = [];
-    for (const p of parts) {
-        const key = p.toLowerCase();
+    for (const raw of parts) {
+        if (!raw) continue;
+        const key = String(raw).trim().toLowerCase();
         if (key && !seen.has(key)) {
             seen.add(key);
-            out.push(p);
+            out.push(String(raw).trim());
         }
     }
     return out.join(', ');
 }
 
-function buildCandidates(address, city) {
-    const addrTokens = tokens(address);
-    const withoutRegion = addrTokens.filter(t => !REGION_HINTS.has(t.toLowerCase()));
+function buildCandidates({ region, city, neighborhood }) {
     const candidates = new Set();
-
-    // 1) full dedupe (address + city + Slovenia)
-    candidates.add(dedupeJoin([...addrTokens, city, 'Slovenia'].filter(Boolean)));
-    // 2) dedupe without region prefixes
-    candidates.add(dedupeJoin([...withoutRegion, city, 'Slovenia'].filter(Boolean)));
-    // 3) most specific token + city + Slovenia
-    if (withoutRegion.length > 0) {
-        const last = withoutRegion[withoutRegion.length - 1];
-        candidates.add(dedupeJoin([last, city, 'Slovenia'].filter(Boolean)));
-    }
-    // 4) city only
-    if (city) {
-        candidates.add(dedupeJoin([city, 'Slovenia']));
-    }
-
+    // 1) most specific: neighborhood + city + Slovenia
+    if (neighborhood) candidates.add(dedupeJoin([neighborhood, city, 'Slovenia']));
+    // 2) neighborhood + region + Slovenia (in case city is too generic)
+    if (neighborhood && region) candidates.add(dedupeJoin([neighborhood, region, 'Slovenia']));
+    // 3) city + region + Slovenia
+    if (city && region) candidates.add(dedupeJoin([city, region, 'Slovenia']));
+    // 4) just city + Slovenia
+    if (city) candidates.add(dedupeJoin([city, 'Slovenia']));
     return Array.from(candidates).filter(q => q && q.toLowerCase() !== 'slovenia');
 }
 
@@ -88,8 +66,8 @@ async function nominatim(query) {
     }
 }
 
-async function geocode(address, city) {
-    const candidates = buildCandidates(address, city);
+async function geocode({ region, city, neighborhood }) {
+    const candidates = buildCandidates({ region, city, neighborhood });
     if (candidates.length === 0) return null;
 
     for (const query of candidates) {
