@@ -7,7 +7,10 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
-    private const val BASE_URL = "http://localhost:3000/api/"
+    private val BASE_URL: String = System.getenv("VIRTUALESTATE_API_URL")
+        ?.takeIf { it.isNotBlank() }
+        ?.let { if (it.endsWith("/")) it else "$it/" }
+        ?: "http://localhost:3000/api/"
 
     private val okHttp: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(HttpLoggingInterceptor().apply {

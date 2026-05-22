@@ -5,17 +5,7 @@ export default function PropertyFilters({ filters, setFilters, onReset }) {
     <div className="filters">
       <div>
         <label style={{ fontSize: 12, color: '#6b7280' }}>Vrsta</label>
-        <select value={filters.propertyType || ''} onChange={e => update('propertyType', e.target.value)}>
-          <option value="">Vse</option>
-          <option value="Stanovanje">Stanovanje</option>
-          <option value="Hiša">Hiša</option>
-          <option value="Vikend">Vikend</option>
-          <option value="Poslovni prostor">Poslovni prostor</option>
-          <option value="Garaža">Garaža</option>
-          <option value="Parcela">Parcela</option>
-          <option value="Počitniški objekt">Počitniški objekt</option>
-          <option value="Soba">Soba</option>
-        </select>
+        <input value={filters.propertyType || ''} onChange={e => update('propertyType', e.target.value)} placeholder="vse" />
       </div>
       <div>
         <label style={{ fontSize: 12, color: '#6b7280' }}>Ponudba</label>

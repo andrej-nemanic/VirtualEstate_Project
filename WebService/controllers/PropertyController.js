@@ -26,7 +26,7 @@ module.exports = {
     list: async function (req, res) {
         try {
             const filter = {};
-            if (req.query.propertyType) filter.propertyType = req.query.propertyType;
+            if (req.query.propertyType) filter.propertyType = { $regex: req.query.propertyType, $options: 'i' };
             if (req.query.offerType) filter.offerType = req.query.offerType;
             if (req.query.city) filter.city = req.query.city;
             if (req.query.region) filter.region = req.query.region;

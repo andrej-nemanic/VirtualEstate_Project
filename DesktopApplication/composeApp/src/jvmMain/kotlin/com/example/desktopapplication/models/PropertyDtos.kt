@@ -15,6 +15,11 @@ data class PropertyIngestDto(
     val lng: Double? = null
 )
 
+data class CoordinatesDto(
+    val type: String? = null,
+    val coordinates: List<Double>? = null
+)
+
 data class PropertyResponseDto(
     val _id: String? = null,
     val region: String? = null,
@@ -26,7 +31,8 @@ data class PropertyResponseDto(
     val price: Double? = null,
     val description: String? = null,
     val propertyLink: String? = null,
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+    val coordinates: CoordinatesDto? = null
 )
 
 object PropertyMapper {
@@ -46,22 +52,30 @@ object PropertyMapper {
         description = property.description,
         propertyLink = property.propertyLink,
         imageUrl = property.imageUrl,
-        lng = lng,
-        lat = lat
+        lng = lng ?: property.lng,
+        lat = lat ?: property.lat
     )
 
-    fun fromResponse(dto: PropertyResponseDto, localId: Int): Property = Property(
-        id = localId,
-        apiId = dto._id,
-        region = dto.region ?: "",
-        city = dto.city ?: "",
-        neighborhood = dto.neighborhood ?: "",
-        offerType = dto.offerType ?: "Prodaja",
-        propertyType = dto.propertyType ?: "",
-        size = dto.size ?: 0.0,
-        price = dto.price ?: 0.0,
-        description = dto.description,
-        propertyLink = dto.propertyLink,
-        imageUrl = dto.imageUrl
-    )
+    fun fromResponse(dto: PropertyResponseDto, localId: Int): Property {
+        val coords = dto.coordinates?.coordinates
+        val lng = coords?.getOrNull(0)
+        val lat = coords?.getOrNull(1)
+        val hasReal = lng != null && lat != null && !(lng == 0.0 && lat == 0.0)
+        return Property(
+            id = localId,
+            apiId = dto._id,
+            region = dto.region ?: "",
+            city = dto.city ?: "",
+            neighborhood = dto.neighborhood ?: "",
+            offerType = dto.offerType ?: "Prodaja",
+            propertyType = dto.propertyType ?: "",
+            size = dto.size ?: 0.0,
+            price = dto.price ?: 0.0,
+            description = dto.description,
+            propertyLink = dto.propertyLink,
+            imageUrl = dto.imageUrl,
+            lng = if (hasReal) lng else null,
+            lat = if (hasReal) lat else null
+        )
+    }
 }

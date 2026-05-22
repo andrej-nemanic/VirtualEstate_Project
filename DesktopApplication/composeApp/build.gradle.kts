@@ -5,7 +5,6 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.composeHotReload)
-    kotlin("plugin.serialization") version "2.3.0"
 }
 
 kotlin {
@@ -30,8 +29,6 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
             implementation(compose.materialIconsExtended)
-            //kotlin.serialization
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
             //Retrofit
             implementation("com.squareup.retrofit2:retrofit:2.9.0")
             implementation("com.squareup.retrofit2:converter-gson:2.9.0")

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { propertyApi } from '../api/client.js';
 
-const PROPERTY_TYPES = ['Stanovanje', 'Hiša', 'Vikend', 'Poslovni prostor', 'Garaža', 'Parcela', 'Počitniški objekt', 'Soba'];
 const OFFER_TYPES = ['Prodaja', 'Oddaja'];
 
 const emptyProperty = {
@@ -9,7 +8,7 @@ const emptyProperty = {
   city: '',
   neighborhood: '',
   offerType: 'Prodaja',
-  propertyType: 'Stanovanje',
+  propertyType: '',
   size: '',
   price: '',
   description: '',
@@ -95,7 +94,7 @@ export default function Admin() {
       city: p.city || '',
       neighborhood: p.neighborhood || '',
       offerType: p.offerType || 'Prodaja',
-      propertyType: p.propertyType || 'Stanovanje',
+      propertyType: p.propertyType || '',
       size: p.size ?? '',
       price: p.price ?? '',
       description: p.description || '',
@@ -137,9 +136,7 @@ export default function Admin() {
             </div>
             <div className="form-group">
               <label>Vrsta nepremičnine</label>
-              <select value={form.propertyType} onChange={e => setForm({ ...form, propertyType: e.target.value })}>
-                {PROPERTY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
+              <input value={form.propertyType} onChange={e => setForm({ ...form, propertyType: e.target.value })} placeholder="npr. Stanovanje, Hiša, Parcela ..." required />
             </div>
             <div className="form-group">
               <label>Velikost (m²)</label>
