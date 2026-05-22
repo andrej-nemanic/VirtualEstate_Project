@@ -4,15 +4,15 @@ services:
   web-service:
     build: ./WebService
     ports:
-      - "5000:5000"
+      - "3000:3000"
     environment:
-      - DATABASE_URL=vaš_povezovalni_niz_do_baze_v_oblaku
+      - DATABASE_URL=mongodb+srv://niksignjar_db_user:2lLWNURcOZyYsJKA@virtualestate.ha8dxw2.mongodb.net/VirtualEstate?retryWrites=true&w=majority&appName=VirtualEstate
     restart: always
 
   web-client:
     build: ./WebClient
     ports:
-      - "80:80"
+      - "5173:80"
     restart: always
     depends_on:
       - web-service

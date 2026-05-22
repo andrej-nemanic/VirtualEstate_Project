@@ -5,11 +5,20 @@ var mongoose = require('mongoose');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var cors = require('cors');
+global.crypto = require('crypto');
 
 var userRoutes = require('./routes/UserRoutes');
 var propertyRoutes = require('./routes/PropertyRoutes');
 
-mongoose.connect('mongodb://127.0.0.1:27017/virtual_estate');
+//mongoose.connect('mongodb://127.0.0.1:27017/virtual_estate');
+
+
+
+const dbUrl = process.env.DATABASE_URL;
+
+mongoose.connect(dbUrl)
+  .then(() => console.log('Uspešno povezan na MongoDB!'))
+  .catch(err => console.error('Napaka pri povezavi z bazo:', err));
 
 var app = express();
 
