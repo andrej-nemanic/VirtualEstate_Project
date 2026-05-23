@@ -146,3 +146,8 @@ th { background: #f9fafb; font-weight: 600; color: #374151; }
   z-index: 2000;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

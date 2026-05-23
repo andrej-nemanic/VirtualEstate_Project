@@ -3,8 +3,10 @@ services:
     build: ./WebService
     ports:
       - "3000:3000"
+    env_file:
+      - ./WebService/.env
     environment:
-      - DATABASE_URL=mongodb+srv://niksignjar_db_user:2lLWNURcOZyYsJKA@virtualestate.ha8dxw2.mongodb.net/VirtualEstate?retryWrites=true&w=majority&appName=VirtualEstate
+      - NODE_ENV=development
     restart: always
     networks:
       - app-network
@@ -13,6 +15,8 @@ services:
     build: ./WebClient
     ports:
       - "5173:5173"
+    environment:
+      - VITE_API_PROXY=http://web-service:3000
     restart: always
     depends_on:
       - web-service

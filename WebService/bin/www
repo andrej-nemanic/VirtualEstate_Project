@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 var app = require('../app');
-var debug = require('debug')('webservice:server');
 var http = require('http');
+var mongoose = require('mongoose');
 var { Server } = require('socket.io');
+var logger = require('../services/Logger');
 
 var port = normalizePort(process.env.PORT || '3000');
 app.set('port', port);
@@ -19,15 +20,49 @@ var io = new Server(server, {
 app.set('socketio', io);
 
 io.on('connection', function(socket) {
-    console.log('Client connected:', socket.id);
+    logger.debug({ socketId: socket.id }, 'Client connected');
     socket.on('disconnect', function() {
-        console.log('Client disconnected:', socket.id);
+        logger.debug({ socketId: socket.id }, 'Client disconnected');
     });
 });
 
 server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);
+
+let shuttingDown = false;
+function shutdown(signal) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    logger.info({ signal }, 'Prejet signal za zaustavitev, čistim...');
+
+    const forceTimeout = setTimeout(() => {
+        logger.error('Prisilna zaustavitev po 10s.');
+        process.exit(1);
+    }, 10000);
+
+    server.close((err) => {
+        if (err) logger.error({ err: err.message }, 'Napaka pri zapiranju HTTP strežnika');
+        io.close(() => {
+            mongoose.connection.close(false).then(() => {
+                clearTimeout(forceTimeout);
+                logger.info('Vsi viri zaprti, izhod.');
+                process.exit(0);
+            });
+        });
+    });
+}
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+process.on('unhandledRejection', (reason) => {
+    logger.error({ err: reason }, 'Nepričakovana napaka v Promise');
+});
+process.on('uncaughtException', (err) => {
+    logger.fatal({ err: err.message, stack: err.stack }, 'Nepričakovana sinhrona napaka');
+    shutdown('uncaughtException');
+});
 
 function normalizePort(val) {
     var port = parseInt(val, 10);
@@ -41,11 +76,11 @@ function onError(error) {
     var bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
     switch (error.code) {
         case 'EACCES':
-            console.error(bind + ' requires elevated privileges');
+            logger.fatal(bind + ' requires elevated privileges');
             process.exit(1);
             break;
         case 'EADDRINUSE':
-            console.error(bind + ' is already in use');
+            logger.fatal(bind + ' is already in use');
             process.exit(1);
             break;
         default:
@@ -56,6 +91,5 @@ function onError(error) {
 function onListening() {
     var addr = server.address();
     var bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
-    console.log('API listening on ' + bind);
-    debug('Listening on ' + bind);
+    logger.info('API listening on ' + bind);
 }

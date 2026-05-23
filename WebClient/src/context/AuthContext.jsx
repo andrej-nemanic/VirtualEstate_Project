@@ -1,15 +1,24 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { authApi } from '../api/client.js';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const navigate = useNavigate();
   const [user, setUser] = useState(() => {
     const stored = localStorage.getItem('user');
     return stored ? JSON.parse(stored) : null;
   });
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [loading, setLoading] = useState(false);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setToken(null);
+    setUser(null);
+  }, []);
 
   useEffect(() => {
     if (token && !user) {
@@ -18,7 +27,24 @@ export function AuthProvider({ children }) {
         localStorage.setItem('user', JSON.stringify(res.data));
       }).catch(() => logout());
     }
-  }, []);
+  }, [token, user, logout]);
+
+  useEffect(() => {
+    const onUnauthorized = () => {
+      logout();
+      navigate('/login', { replace: true });
+    };
+    const onStorage = (e) => {
+      if (e.key === 'token') setToken(e.newValue);
+      if (e.key === 'user') setUser(e.newValue ? JSON.parse(e.newValue) : null);
+    };
+    window.addEventListener('auth:unauthorized', onUnauthorized);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('auth:unauthorized', onUnauthorized);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [logout, navigate]);
 
   const login = async (email, password) => {
     setLoading(true);
@@ -46,13 +72,6 @@ export function AuthProvider({ children }) {
       setLoading(false);
       return { ok: false, message: err.response?.data?.message || 'Napaka pri registraciji' };
     }
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setToken(null);
-    setUser(null);
   };
 
   return (

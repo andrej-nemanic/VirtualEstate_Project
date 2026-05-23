@@ -5,6 +5,7 @@ import com.example.desktopapplication.models.PropertyMapper
 import com.example.desktopapplication.models.User
 import com.example.desktopapplication.models.UserMapper
 import com.example.desktopapplication.network.ApiClient
+import com.example.desktopapplication.network.extractApiErrorMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -21,7 +22,7 @@ fun CoroutineScope.refreshProperties(
                 PropertyMapper.fromResponse(dto, i + 1)
             } to null
         } catch (e: Exception) {
-            emptyList<Property>() to (e.message ?: "Napaka pri nalaganju")
+            emptyList<Property>() to extractApiErrorMessage(e, "Napaka pri nalaganju nepremičnin")
         }
         withContext(Dispatchers.Main) { onResult(data, error) }
     }
@@ -38,7 +39,7 @@ fun CoroutineScope.refreshUsers(
                 UserMapper.fromResponse(dto, i + 1)
             } to null
         } catch (e: Exception) {
-            emptyList<User>() to (e.message ?: "Napaka pri nalaganju")
+            emptyList<User>() to extractApiErrorMessage(e, "Napaka pri nalaganju uporabnikov")
         }
         withContext(Dispatchers.Main) { onResult(data, error) }
     }
@@ -56,7 +57,7 @@ fun CoroutineScope.ingestAll(
                 ApiClient.properties.create(PropertyMapper.toIngest(p))
                 saved++
             } catch (e: Exception) {
-                lastError = e.message ?: "Napaka pri pošiljanju"
+                lastError = extractApiErrorMessage(e, "Napaka pri pošiljanju")
             }
         }
         withContext(Dispatchers.Main) { onDone(saved, lastError) }

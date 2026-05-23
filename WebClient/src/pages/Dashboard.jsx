@@ -1,22 +1,49 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { propertyApi } from '../api/client.js';
 import { socket } from '../api/socket.js';
 import PropertyMap from '../components/PropertyMap.jsx';
 import PropertyCharts from '../components/PropertyCharts.jsx';
 import PropertyFilters from '../components/PropertyFilters.jsx';
+import { PropertyGridSkeleton } from '../components/Skeleton.jsx';
+
+const FILTER_KEYS = ['propertyType', 'offerType', 'region', 'city', 'minPrice', 'maxPrice', 'minSize', 'maxSize', 'description'];
+
+function searchParamsToFilters(sp) {
+  const f = {};
+  FILTER_KEYS.forEach(k => {
+    const v = sp.get(k);
+    if (v) f[k] = v;
+  });
+  return f;
+}
+
+function filtersToSearchParams(filters) {
+  const out = {};
+  FILTER_KEYS.forEach(k => {
+    if (filters[k]) out[k] = filters[k];
+  });
+  return out;
+}
 
 export default function Dashboard() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({});
   const [toast, setToast] = useState('');
+
+  const filters = useMemo(() => searchParamsToFilters(searchParams), [searchParams]);
+
+  const setFilters = (next) => {
+    setSearchParams(filtersToSearchParams(next), { replace: true });
+  };
+
+  const resetFilters = () => setSearchParams({}, { replace: true });
 
   const fetchProperties = async () => {
     setLoading(true);
     try {
-      const params = {};
-      Object.entries(filters).forEach(([k, v]) => { if (v) params[k] = v; });
-      const res = await propertyApi.list(params);
+      const res = await propertyApi.list(filters);
       setProperties(res.data);
     } catch (err) {
       console.error(err);
@@ -27,7 +54,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchProperties();
-  }, [filters]);
+  }, [searchParams]);
 
   useEffect(() => {
     const onCreate = (p) => {
@@ -63,11 +90,20 @@ export default function Dashboard() {
       <PropertyFilters
         filters={filters}
         setFilters={setFilters}
-        onReset={() => setFilters({})}
+        onReset={resetFilters}
       />
 
       {loading ? (
-        <div className="card">Nalaganje...</div>
+        <>
+          <div className="grid-3">
+            <div className="card" style={{ height: 260 }} />
+            <div className="card" style={{ height: 260 }} />
+            <div className="card" style={{ height: 260 }} />
+          </div>
+          <div className="card" style={{ height: 500, marginTop: 16 }} />
+          <h2>Seznam</h2>
+          <PropertyGridSkeleton count={6} />
+        </>
       ) : (
         <>
           <PropertyCharts properties={properties} />
@@ -83,6 +119,7 @@ export default function Dashboard() {
                 <>
                   {p.imageUrl && <img src={p.imageUrl} alt="" style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />}
                   <span className="badge">{p.propertyType}</span> <span className="badge" style={{ marginLeft: 4 }}>{p.offerType}</span>
+                  {p.source && <span className="badge" style={{ marginLeft: 4, background: '#fef3c7', color: '#92400e' }}>{p.source}</span>}
                   <h3>{p.neighborhood ? `${p.neighborhood}, ${p.city}` : p.city}</h3>
                   <div className="meta">{p.region}</div>
                   <div className="price">{p.price?.toLocaleString()} €</div>

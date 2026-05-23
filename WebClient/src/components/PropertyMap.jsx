@@ -5,12 +5,12 @@ import { useEffect } from 'react';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+  iconRetinaUrl: '/leaflet/marker-icon-2x.png',
+  iconUrl: '/leaflet/marker-icon.png',
+  shadowUrl: '/leaflet/marker-shadow.png'
 });
 
-const typeColors = {
+const KNOWN_TYPE_COLORS = {
   'Stanovanje': '#f59e0b',
   'Hiša': '#16a34a',
   'Vikend': '#10b981',
@@ -21,8 +21,22 @@ const typeColors = {
   'Soba': '#ec4899'
 };
 
+const FALLBACK_PALETTE = ['#7c3aed', '#0d9488', '#be123c', '#a16207', '#155e75', '#9333ea', '#ca8a04', '#0891b2'];
+
+function colorForType(type) {
+  if (!type) return '#2563eb';
+  if (KNOWN_TYPE_COLORS[type]) return KNOWN_TYPE_COLORS[type];
+  let hash = 0;
+  for (let i = 0; i < type.length; i++) hash = (hash * 31 + type.charCodeAt(i)) | 0;
+  return FALLBACK_PALETTE[Math.abs(hash) % FALLBACK_PALETTE.length];
+}
+
+export function getTypeColor(type) {
+  return colorForType(type);
+}
+
 function makeIcon(type) {
-  const color = typeColors[type] || '#2563eb';
+  const color = colorForType(type);
   return L.divIcon({
     className: 'custom-marker',
     html: `<div style="background:${color};width:24px;height:24px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);"></div>`,
@@ -85,6 +99,7 @@ export default function PropertyMap({ properties }) {
                     {p.region && <> ({p.region})</>}<br />
                     Cena: <b>{p.price?.toLocaleString()} €</b><br />
                     Velikost: {p.size} m²<br />
+                    {p.source && <span className="badge" style={{ marginTop: 4 }}>{p.source}</span>}
                     {p.description && <div style={{ marginTop: 4, fontStyle: 'italic', fontSize: 12 }}>{p.description.substring(0, 120)}{p.description.length > 120 ? '…' : ''}</div>}
                     {p.propertyLink && (
                       <a href={p.propertyLink} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 6 }}>

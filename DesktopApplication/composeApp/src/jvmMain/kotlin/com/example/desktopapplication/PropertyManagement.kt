@@ -39,7 +39,7 @@ fun PropertiesManagement(
     val result = items.filter { p ->
         val matchesText = q.isBlank() || listOf(
             p.region, p.city, p.neighborhood, p.offerType, p.propertyType,
-            p.description.orEmpty(), p.price.toInt().toString()
+            p.description.orEmpty(), p.price.toInt().toString(), p.source.orEmpty()
         ).any { it.contains(q, ignoreCase = true) }
         val matchesType = t.isBlank() || p.propertyType.contains(t, ignoreCase = true)
         matchesText && matchesType
@@ -51,6 +51,7 @@ fun PropertiesManagement(
         "propertyType" -> result.sortedBy { it.propertyType.lowercase() }
         "size" -> result.sortedBy { it.size }
         "price" -> result.sortedBy { it.price }
+        "source" -> result.sortedBy { it.source.orEmpty().lowercase() }
         else -> result
     }
     val filtered = if (sortKey != null && sortDir == SortDirection.DESC) sorted.reversed() else sorted
@@ -97,6 +98,7 @@ fun PropertiesManagement(
                     SortableHeader("Mesto / Naselje", "city", sortKey, sortDir, sortClick, Modifier.weight(2f))
                     SortableHeader("Ponudba", "offerType", sortKey, sortDir, sortClick, Modifier.weight(0.7f))
                     SortableHeader("Tip", "propertyType", sortKey, sortDir, sortClick, Modifier.weight(1f))
+                    SortableHeader("Vir", "source", sortKey, sortDir, sortClick, Modifier.weight(0.8f))
                     SortableHeader("m²", "size", sortKey, sortDir, sortClick, Modifier.weight(0.5f))
                     SortableHeader("Cena", "price", sortKey, sortDir, sortClick, Modifier.weight(1f))
                     Text("Akcije", modifier = Modifier.weight(1.1f), fontWeight = FontWeight.Bold)
@@ -137,6 +139,7 @@ fun PropertiesManagement(
                                 )
                                 Text(p.offerType, modifier = Modifier.weight(0.7f))
                                 Text(p.propertyType, modifier = Modifier.weight(1f))
+                                Text(p.source ?: "—", modifier = Modifier.weight(0.8f), color = Color(0xFF6B7280))
                                 Text("${p.size.toInt()}", modifier = Modifier.weight(0.5f))
                                 Text("${p.price.toInt()} €", modifier = Modifier.weight(1f))
                                 Row(modifier = Modifier.weight(1.1f)) {
@@ -190,6 +193,7 @@ fun PropertiesManagement(
                 "Opis" to (p.description ?: ""),
                 "Povezava do oglasa" to (p.propertyLink ?: ""),
                 "URL slike" to (p.imageUrl ?: ""),
+                "Vir" to (p.source ?: ""),
                 "Koordinate (lng, lat)" to if (p.lng != null && p.lat != null) "${p.lng}, ${p.lat}" else "",
                 "Backend ID" to (p.apiId ?: "")
             ),
@@ -234,6 +238,7 @@ fun PropertyEditDialog(
     var description by remember { mutableStateOf(property?.description ?: "") }
     var propertyLink by remember { mutableStateOf(property?.propertyLink ?: "") }
     var imageUrl by remember { mutableStateOf(property?.imageUrl ?: "") }
+    var source by remember { mutableStateOf(property?.source ?: "ročno") }
     var lng by remember { mutableStateOf(property?.lng?.toString() ?: "") }
     var lat by remember { mutableStateOf(property?.lat?.toString() ?: "") }
     var errors by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
@@ -242,14 +247,21 @@ fun PropertyEditDialog(
         val e = mutableMapOf<String, String>()
         if (region.isBlank()) e["region"] = "Regija je obvezna"
         if (city.isBlank()) e["city"] = "Mesto je obvezno"
+        if (propertyType.isBlank()) e["propertyType"] = "Vrsta je obvezna"
         val sizeNum = size.replace(",", ".").toDoubleOrNull()
         if (sizeNum == null || sizeNum < 0) e["size"] = "Velikost mora biti veljavno število ≥ 0"
         val priceNum = price.replace(",", ".").toDoubleOrNull()
         if (priceNum == null || priceNum < 0) e["price"] = "Cena mora biti veljavno število ≥ 0"
-        if (lng.isNotBlank() && lng.replace(",", ".").toDoubleOrNull() == null)
-            e["lng"] = "Neveljavna številka"
-        if (lat.isNotBlank() && lat.replace(",", ".").toDoubleOrNull() == null)
-            e["lat"] = "Neveljavna številka"
+        val lngOk = lng.isBlank() || lng.replace(",", ".").toDoubleOrNull() != null
+        val latOk = lat.isBlank() || lat.replace(",", ".").toDoubleOrNull() != null
+        if (!lngOk) e["lng"] = "Neveljavna številka"
+        if (!latOk) e["lat"] = "Neveljavna številka"
+        val lngFilled = lng.isNotBlank()
+        val latFilled = lat.isNotBlank()
+        if (lngFilled != latFilled) {
+            e["lng"] = "Vnesi oboje (lng + lat) ali nobeno"
+            e["lat"] = "Vnesi oboje (lng + lat) ali nobeno"
+        }
         return e
     }
 
@@ -262,12 +274,13 @@ fun PropertyEditDialog(
                 ValidatedField(city, { city = it }, "Mesto / občina", errors["city"])
                 StyledTextField(neighborhood, { neighborhood = it }, "Naselje (opcijsko)")
                 DropdownSelector("Tip ponudbe", offerType, OFFER_TYPES) { offerType = it }
-                StyledTextField(propertyType, { propertyType = it }, "Vrsta nepremičnine (npr. Stanovanje, Hiša, Parcela)")
+                ValidatedField(propertyType, { propertyType = it }, "Vrsta nepremičnine (npr. Stanovanje, Hiša, Parcela)", errors["propertyType"])
                 ValidatedField(size, { size = it }, "Velikost (m²)", errors["size"])
                 ValidatedField(price, { price = it }, "Cena (€)", errors["price"])
                 StyledTextField(description, { description = it }, "Opis")
                 StyledTextField(propertyLink, { propertyLink = it }, "Povezava do oglasa (URL)")
                 StyledTextField(imageUrl, { imageUrl = it }, "URL slike")
+                StyledTextField(source, { source = it }, "Vir (npr. ročno, nepremicnina.si, 24nep.si, generator)")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ValidatedField(lng, { lng = it }, "Geo. dolžina (lng) — opcijsko", errors["lng"], Modifier.weight(1f))
                     ValidatedField(lat, { lat = it }, "Geo. širina (lat) — opcijsko", errors["lat"], Modifier.weight(1f))
@@ -286,12 +299,13 @@ fun PropertyEditDialog(
                         city = city.trim(),
                         neighborhood = neighborhood.trim(),
                         offerType = offerType,
-                        propertyType = propertyType,
+                        propertyType = propertyType.trim(),
                         size = size.replace(",", ".").toDoubleOrNull() ?: 0.0,
                         price = price.replace(",", ".").toDoubleOrNull() ?: 0.0,
                         description = description.ifBlank { null },
                         propertyLink = propertyLink.ifBlank { null },
-                        imageUrl = imageUrl.ifBlank { null }
+                        imageUrl = imageUrl.ifBlank { null },
+                        source = source.ifBlank { null }
                     ),
                     lng.replace(",", ".").toDoubleOrNull(),
                     lat.replace(",", ".").toDoubleOrNull()
