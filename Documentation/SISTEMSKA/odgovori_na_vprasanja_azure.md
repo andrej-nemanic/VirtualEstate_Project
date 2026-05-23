@@ -18,9 +18,9 @@ Postopek:
 ![Tretji in četrti korak](./images/imagesAzure/image2.png)
 ## Vprašanje 2: Kakšen tip diska je bil dodan vaši navidezni napravi in kakšna je njegova kapaciteta?
 Podatke o disku najdemo, če v meniju virtualne naprave kliknemo na zavihek Disks.
-- Tip diska: Standard SSD LRS.
+- Tip diska: Premium SSD LRS.
 - Kapaciteta: 30 GiB.
-![Izsek iz portala Azure, ki prikazuje zavihek Disks, tip in velikost OS diska](./images/imagesAzure/image.png)
+![Prikaz tipa in velikosti OS diska](./images/imagesAzure/Screenshot_2026-05-22_145455.png)
 
 ## Vprašanje 3: Kje preverimo stanje trenutne porabe virov v naši naročnini ("Azure for students")? Namig: stanje porabe bo vidno komaj 24ur po vpostavitvi.
 Stanje porabe preostalih sredstev (od začetnih 100 €) in porabljenih ur virtualnih naprav spremljamo na portalu Azure Sponsorship.
