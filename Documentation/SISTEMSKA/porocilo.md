@@ -139,7 +139,9 @@ ssh VirtualEstate@68.210.138.100
 ```
 Po potrditvi s yes in vnosu poverilnic se uspešno prijavimo v sejo oddaljenega uporabnika VirtualEstate@VirtualEstateMachine.
 
-![Dostop do virtualne naprave](./images/imagesPresentation/image5.png)
+![Dostop do virtualne naprave (Nik Šignjar Žilavec)](./images/imagesPresentation/image5.png)
+![Dostop do virtualne naprave (Andrej Nemanič)](./images/imagesPresentation/image6.png)
+
 
 ## 5. Analiza portala Azure
 ### Vprašanje 1: Kje in kako omogočite "port forwarding" (posredovanje vrat)?
