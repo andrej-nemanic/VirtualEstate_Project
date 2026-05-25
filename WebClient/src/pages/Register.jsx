@@ -49,33 +49,35 @@ export default function Register() {
   return (
     <div className="auth-page">
       <h1>Registracija</h1>
+      <p className="auth-subtitle">Ustvari nov račun — traja manj kot minuto.</p>
       <form onSubmit={handleSubmit} noValidate>
         {error && <div className="alert alert-error">{error}</div>}
         <div className="form-group">
           <label>Ime</label>
-          <input name="name" value={form.name} onChange={handleChange} required />
-          {fieldErrors.name && <div style={{ color: '#dc2626', fontSize: 12, marginTop: 4 }}>{fieldErrors.name}</div>}
+          <input name="name" value={form.name} onChange={handleChange} placeholder="Janez Novak" required autoFocus />
+          {fieldErrors.name && <div className="field-error">{fieldErrors.name}</div>}
         </div>
         <div className="form-group">
           <label>E-pošta</label>
-          <input name="email" type="email" value={form.email} onChange={handleChange} required />
-          {fieldErrors.email && <div style={{ color: '#dc2626', fontSize: 12, marginTop: 4 }}>{fieldErrors.email}</div>}
+          <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="ime@primer.si" required />
+          {fieldErrors.email && <div className="field-error">{fieldErrors.email}</div>}
         </div>
         <div className="form-group">
-          <label>Geslo (najmanj {PASSWORD_MIN_LENGTH} znakov, vsaj 1 črka in 1 številka)</label>
-          <input name="password" type="password" value={form.password} onChange={handleChange} required />
-          {fieldErrors.password && <div style={{ color: '#dc2626', fontSize: 12, marginTop: 4 }}>{fieldErrors.password}</div>}
+          <label>Geslo</label>
+          <input name="password" type="password" value={form.password} onChange={handleChange} placeholder="••••••••" required />
+          <div className="subtle" style={{ fontSize: 12, marginTop: 4 }}>Najmanj {PASSWORD_MIN_LENGTH} znakov, vsaj 1 črka in 1 številka.</div>
+          {fieldErrors.password && <div className="field-error">{fieldErrors.password}</div>}
         </div>
         <div className="form-group">
           <label>Potrdi geslo</label>
-          <input name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange} required />
-          {fieldErrors.confirmPassword && <div style={{ color: '#dc2626', fontSize: 12, marginTop: 4 }}>{fieldErrors.confirmPassword}</div>}
+          <input name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange} placeholder="••••••••" required />
+          {fieldErrors.confirmPassword && <div className="field-error">{fieldErrors.confirmPassword}</div>}
         </div>
         <button type="submit" disabled={loading} style={{ width: '100%' }}>
-          {loading ? 'Registriram...' : 'Registracija'}
+          {loading ? 'Registriram…' : 'Registracija'}
         </button>
       </form>
-      <p style={{ marginTop: 16, fontSize: 14, textAlign: 'center' }}>
+      <p className="auth-footer">
         Že imaš račun? <Link to="/login">Prijava</Link>
       </p>
     </div>

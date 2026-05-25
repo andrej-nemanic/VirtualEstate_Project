@@ -6,7 +6,6 @@ import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Admin from './pages/Admin.jsx';
-import Home from './pages/Home.jsx';
 
 export default function App() {
   return (
@@ -14,12 +13,10 @@ export default function App() {
       <Navbar />
       <ErrorBoundary>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={
-            <PrivateRoute><Dashboard /></PrivateRoute>
-          } />
           <Route path="/admin" element={
             <PrivateRoute adminOnly><Admin /></PrivateRoute>
           } />
