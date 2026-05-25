@@ -1,5 +1,6 @@
 services:
   web-service:
+    image: andrejnemanic27a/virtualestate-web-service:latest
     build: ./WebService
     ports:
       - "3000:3000"
@@ -10,6 +11,7 @@ services:
       - app-network
 
   web-client:
+    image: andrejnemanic27a/virtualestate-web-client:latest
     build: ./WebClient
     ports:
       - "5173:5173"
