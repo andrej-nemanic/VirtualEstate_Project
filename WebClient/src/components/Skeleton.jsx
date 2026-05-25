@@ -6,9 +6,6 @@ export function Skeleton({ height = 16, width = '100%', radius = 6, style }) {
         height,
         width,
         borderRadius: radius,
-        background: 'linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%)',
-        backgroundSize: '200% 100%',
-        animation: 'skeleton-shimmer 1.4s ease-in-out infinite',
         ...style
       }}
     />
@@ -17,12 +14,14 @@ export function Skeleton({ height = 16, width = '100%', radius = 6, style }) {
 
 export function PropertyCardSkeleton() {
   return (
-    <div className="property-card" style={{ padding: 16 }}>
-      <Skeleton height={160} radius={8} style={{ marginBottom: 12 }} />
-      <Skeleton height={14} width="40%" style={{ marginBottom: 8 }} />
-      <Skeleton height={22} width="70%" style={{ marginBottom: 8 }} />
-      <Skeleton height={14} width="30%" style={{ marginBottom: 4 }} />
-      <Skeleton height={20} width="50%" />
+    <div className="property-card" style={{ cursor: 'default' }}>
+      <Skeleton height={180} radius={0} />
+      <div style={{ padding: '1rem 1.1rem 1.1rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <Skeleton height={14} width="35%" />
+        <Skeleton height={20} width="75%" />
+        <Skeleton height={14} width="30%" />
+        <Skeleton height={22} width="50%" style={{ marginTop: 6 }} />
+      </div>
     </div>
   );
 }

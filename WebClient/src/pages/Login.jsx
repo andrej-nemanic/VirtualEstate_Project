@@ -20,21 +20,22 @@ export default function Login() {
   return (
     <div className="auth-page">
       <h1>Prijava</h1>
+      <p className="auth-subtitle">Dobrodošel nazaj — vpiši svoje podatke.</p>
       <form onSubmit={handleSubmit}>
         {error && <div className="alert alert-error">{error}</div>}
         <div className="form-group">
           <label>E-pošta</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="ime@primer.si" required autoFocus />
         </div>
         <div className="form-group">
           <label>Geslo</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
         </div>
         <button type="submit" disabled={loading} style={{ width: '100%' }}>
-          {loading ? 'Prijavljam...' : 'Prijava'}
+          {loading ? 'Prijavljam…' : 'Prijava'}
         </button>
       </form>
-      <p style={{ marginTop: 16, fontSize: 14, textAlign: 'center' }}>
+      <p className="auth-footer">
         Še nimaš računa? <Link to="/register">Registracija</Link>
       </p>
     </div>

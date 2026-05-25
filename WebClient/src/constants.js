@@ -2,6 +2,14 @@ export const OFFER_TYPES = ['Prodaja', 'Oddaja'];
 
 export const SOURCE_OPTIONS = ['nepremicnina.si', '24nep.si', 'generator', 'ročno'];
 
+export function hasSize(p) {
+  return typeof p?.size === 'number' && p.size > 0;
+}
+
+export function hasPrice(p) {
+  return typeof p?.price === 'number' && p.price > 0;
+}
+
 export const PASSWORD_MIN_LENGTH = 8;
 export const EMAIL_REGEX = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
