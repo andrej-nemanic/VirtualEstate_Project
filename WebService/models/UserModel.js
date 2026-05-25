@@ -4,10 +4,10 @@ var bcrypt = require('bcrypt');
 
 var UserSchema = new Schema({
     'name': String,
-    'email': { type: String, required: true, unique: true, index: true },
+    'email': { type: String, required: true, unique: true, index: true, lowercase: true, trim: true },
     'password': String,
     'isAdmin': { type: Boolean, default: false }
-});
+}, { timestamps: true });
 
 UserSchema.pre('save', async function() {
     var user = this;

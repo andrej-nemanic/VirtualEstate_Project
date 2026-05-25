@@ -5,6 +5,7 @@ import com.example.desktopapplication.models.PropertyMapper
 import com.example.desktopapplication.models.User
 import com.example.desktopapplication.models.UserMapper
 import com.example.desktopapplication.network.ApiClient
+import com.example.desktopapplication.network.extractApiErrorMessage
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -51,6 +52,11 @@ fun AppNavigation() {
     var editingProperty by remember { mutableStateOf<Property?>(null) }
     var editingUser by remember { mutableStateOf<User?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
+
+    // lifted state for WebSources screen
+    val scrapedProperties = remember { mutableStateListOf<Property>() }
+    var scrapeErrors by remember { mutableStateOf<List<String>>(emptyList()) }
+    var isScraping by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
 
@@ -187,7 +193,7 @@ fun AppNavigation() {
                                     scope.launch(Dispatchers.IO) {
                                         val err = try {
                                             ApiClient.properties.delete(apiId); null
-                                        } catch (e: Exception) { e.message ?: "Napaka pri brisanju" }
+                                        } catch (e: Exception) { extractApiErrorMessage(e, "Napaka pri brisanju") }
                                         withContext(Dispatchers.Main) {
                                             if (err != null) {
                                                 statusMessage = "Napaka: $err"
@@ -234,7 +240,7 @@ fun AppNavigation() {
                                     scope.launch(Dispatchers.IO) {
                                         val err = try {
                                             ApiClient.users.delete(apiId); null
-                                        } catch (e: Exception) { e.message ?: "Napaka pri brisanju" }
+                                        } catch (e: Exception) { extractApiErrorMessage(e, "Napaka pri brisanju") }
                                         withContext(Dispatchers.Main) {
                                             if (err != null) {
                                                 statusMessage = "Napaka: $err"
@@ -270,6 +276,22 @@ fun AppNavigation() {
                     }
                     Screen.WebSources -> {
                         WebSourcesScreen(
+                            scrapedProperties = scrapedProperties,
+                            scrapeErrors = scrapeErrors,
+                            isScraping = isScraping,
+                            onScrape = {
+                                isScraping = true
+                                scope.launch(Dispatchers.IO) {
+                                    val result = WebScraper.scrapeAll()
+                                    withContext(Dispatchers.Main) {
+                                        scrapedProperties.clear()
+                                        scrapedProperties.addAll(result.properties.mapIndexed { i, p -> p.copy(id = i) })
+                                        scrapeErrors = result.errors
+                                        isScraping = false
+                                    }
+                                }
+                            },
+                            onClearErrors = { scrapeErrors = emptyList() },
                             onSendToDatabase = { selected ->
                                 statusMessage = "Pošiljam ${selected.size} zapisov..."
                                 scope.ingestAll(selected) { savedCount, err ->
@@ -311,7 +333,7 @@ fun AppNavigation() {
                     val err = try {
                         ApiClient.properties.create(PropertyMapper.toIngest(newProp, lng, lat)); null
                     } catch (e: Exception) {
-                        e.message ?: "Napaka pri ustvarjanju"
+                        extractApiErrorMessage(e, "Napaka pri ustvarjanju")
                     }
                     withContext(Dispatchers.Main) {
                         statusMessage = if (err != null) "Napaka: $err" else "Dodano."
@@ -332,7 +354,7 @@ fun AppNavigation() {
                     val err = try {
                         ApiClient.users.create(UserMapper.toIngest(newUser, password)); null
                     } catch (e: Exception) {
-                        e.message ?: "Napaka pri ustvarjanju"
+                        extractApiErrorMessage(e, "Napaka pri ustvarjanju")
                     }
                     withContext(Dispatchers.Main) {
                         statusMessage = if (err != null) "Napaka: $err" else "Uporabnik dodan."
@@ -358,7 +380,7 @@ fun AppNavigation() {
                     val err = try {
                         ApiClient.properties.update(apiId, PropertyMapper.toIngest(updated, lng, lat)); null
                     } catch (e: Exception) {
-                        e.message ?: "Napaka pri posodabljanju"
+                        extractApiErrorMessage(e, "Napaka pri posodabljanju")
                     }
                     withContext(Dispatchers.Main) {
                         statusMessage = if (err != null) "Napaka: $err" else "Posodobljeno."
@@ -384,7 +406,7 @@ fun AppNavigation() {
                     val err = try {
                         ApiClient.users.update(apiId, UserMapper.toIngest(updated, password)); null
                     } catch (e: Exception) {
-                        e.message ?: "Napaka pri posodabljanju"
+                        extractApiErrorMessage(e, "Napaka pri posodabljanju")
                     }
                     withContext(Dispatchers.Main) {
                         statusMessage = if (err != null) "Napaka: $err" else "Uporabnik posodobljen."

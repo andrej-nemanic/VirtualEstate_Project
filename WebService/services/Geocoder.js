@@ -1,8 +1,16 @@
+const { LRUCache } = require('lru-cache');
+const logger = require('./Logger');
+
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
+const PHOTON_URL = 'https://photon.komoot.io/api';
 const USER_AGENT = 'VirtualEstate/1.0 (FERI student project)';
 const MIN_INTERVAL_MS = 1100;
 
-const cache = new Map();
+const cache = new LRUCache({
+    max: 1000,
+    ttl: 7 * 24 * 60 * 60 * 1000
+});
+
 let lastCallAt = 0;
 
 function wait(ms) {
@@ -33,13 +41,9 @@ function dedupeJoin(parts) {
 
 function buildCandidates({ region, city, neighborhood }) {
     const candidates = new Set();
-    // 1) most specific: neighborhood + city + Slovenia
     if (neighborhood) candidates.add(dedupeJoin([neighborhood, city, 'Slovenia']));
-    // 2) neighborhood + region + Slovenia (in case city is too generic)
     if (neighborhood && region) candidates.add(dedupeJoin([neighborhood, region, 'Slovenia']));
-    // 3) city + region + Slovenia
     if (city && region) candidates.add(dedupeJoin([city, region, 'Slovenia']));
-    // 4) just city + Slovenia
     if (city) candidates.add(dedupeJoin([city, 'Slovenia']));
     return Array.from(candidates).filter(q => q && q.toLowerCase() !== 'slovenia');
 }
@@ -50,7 +54,7 @@ async function nominatim(query) {
     try {
         const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
         if (!res.ok) {
-            console.warn('Nominatim status', res.status, 'for', query);
+            logger.warn({ status: res.status, query }, 'Nominatim non-OK status');
             return null;
         }
         const json = await res.json();
@@ -61,9 +65,37 @@ async function nominatim(query) {
         if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
         return { lat, lng };
     } catch (err) {
-        console.warn('Geocode error for', query, err.message);
+        logger.warn({ err: err.message, query }, 'Nominatim error');
         return null;
     }
+}
+
+async function photon(query) {
+    const url = `${PHOTON_URL}?lang=en&limit=1&q=${encodeURIComponent(query)}`;
+    try {
+        const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
+        if (!res.ok) return null;
+        const json = await res.json();
+        const feat = json?.features?.[0];
+        if (!feat || !feat.geometry || !Array.isArray(feat.geometry.coordinates)) return null;
+        const [lng, lat] = feat.geometry.coordinates;
+        if (Number.isNaN(lat) || Number.isNaN(lng)) return null;
+        const country = feat.properties?.countrycode || feat.properties?.country;
+        if (country && String(country).toLowerCase() !== 'si' && String(country).toLowerCase() !== 'slovenia') {
+            return null;
+        }
+        return { lat, lng };
+    } catch (err) {
+        logger.warn({ err: err.message, query }, 'Photon error');
+        return null;
+    }
+}
+
+async function geocodeQuery(query) {
+    const hit = await nominatim(query);
+    if (hit) return hit;
+    logger.debug({ query }, 'Nominatim miss, poskušam Photon...');
+    return await photon(query);
 }
 
 async function geocode({ region, city, neighborhood }) {
@@ -77,10 +109,10 @@ async function geocode({ region, city, neighborhood }) {
             if (cached) return cached;
             continue;
         }
-        const hit = await nominatim(query);
+        const hit = await geocodeQuery(query);
         cache.set(cacheKey, hit);
         if (hit) {
-            console.log('Geocoded', JSON.stringify(query), '->', hit);
+            logger.info({ query, hit }, 'Geocoded');
             return hit;
         }
     }

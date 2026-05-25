@@ -83,4 +83,22 @@ class PropertyMapperTest {
         assertNull(result.lng)
         assertNull(result.lat)
     }
+
+    @Test
+    fun `toIngest preserves source field`() {
+        val property = Property(
+            city = "Maribor", propertyType = "Stanovanje",
+            size = 60.0, price = 120000.0,
+            source = "nepremicnina.si"
+        )
+        val ingest = PropertyMapper.toIngest(property)
+        assertEquals("nepremicnina.si", ingest.source)
+    }
+
+    @Test
+    fun `fromResponse maps source field`() {
+        val dto = PropertyResponseDto(_id = "y", city = "Celje", source = "generator")
+        val result = PropertyMapper.fromResponse(dto, localId = 1)
+        assertEquals("generator", result.source)
+    }
 }

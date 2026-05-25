@@ -11,6 +11,7 @@ data class PropertyIngestDto(
     val description: String? = null,
     val propertyLink: String? = null,
     val imageUrl: String? = null,
+    val source: String? = null,
     val lat: Double? = null,
     val lng: Double? = null
 )
@@ -32,6 +33,7 @@ data class PropertyResponseDto(
     val description: String? = null,
     val propertyLink: String? = null,
     val imageUrl: String? = null,
+    val source: String? = null,
     val coordinates: CoordinatesDto? = null
 )
 
@@ -52,6 +54,7 @@ object PropertyMapper {
         description = property.description,
         propertyLink = property.propertyLink,
         imageUrl = property.imageUrl,
+        source = property.source,
         lng = lng ?: property.lng,
         lat = lat ?: property.lat
     )
@@ -74,6 +77,7 @@ object PropertyMapper {
             description = dto.description,
             propertyLink = dto.propertyLink,
             imageUrl = dto.imageUrl,
+            source = dto.source,
             lng = if (hasReal) lng else null,
             lat = if (hasReal) lat else null
         )

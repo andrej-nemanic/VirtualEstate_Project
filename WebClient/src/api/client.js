@@ -18,8 +18,13 @@ client.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      const path = error.config?.url || '';
+      const isAuthEndpoint = path.includes('/users/login') || path.includes('/users/register');
+      if (!isAuthEndpoint) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.dispatchEvent(new Event('auth:unauthorized'));
+      }
     }
     return Promise.reject(error);
   }
@@ -37,7 +42,8 @@ export const propertyApi = {
   create: (data) => client.post('/properties', data),
   update: (id, data) => client.put(`/properties/${id}`, data),
   remove: (id) => client.delete(`/properties/${id}`),
-  search: (lat, lng, distance) => client.get('/properties/search', { params: { lat, lng, distance } })
+  search: (lat, lng, distance) => client.get('/properties/search', { params: { lat, lng, distance } }),
+  stats: (params) => client.get('/properties/stats', { params })
 };
 
 export default client;

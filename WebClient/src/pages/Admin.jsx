@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { propertyApi } from '../api/client.js';
-
-const OFFER_TYPES = ['Prodaja', 'Oddaja'];
+import { socket } from '../api/socket.js';
+import { OFFER_TYPES, SOURCE_OPTIONS } from '../constants.js';
+import ConfirmDialog from '../components/ConfirmDialog.jsx';
+import { TableRowSkeleton } from '../components/Skeleton.jsx';
 
 const emptyProperty = {
   region: '',
@@ -14,6 +16,7 @@ const emptyProperty = {
   description: '',
   propertyLink: '',
   imageUrl: '',
+  source: 'ročno',
   lng: '',
   lat: ''
 };
@@ -24,6 +27,8 @@ export default function Admin() {
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   const flash = (setter, msg) => {
     setter(msg);
@@ -31,15 +36,32 @@ export default function Admin() {
   };
 
   const fetchAll = async () => {
+    setLoading(true);
     try {
       const res = await propertyApi.list();
       setProperties(res.data);
     } catch (err) {
       flash(setError, 'Napaka pri nalaganju.');
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => { fetchAll(); }, []);
+
+  useEffect(() => {
+    const onCreate = (p) => setProperties(prev => prev.some(x => x._id === p._id) ? prev : [p, ...prev]);
+    const onUpdate = (p) => setProperties(prev => prev.map(x => x._id === p._id ? p : x));
+    const onDelete = ({ _id }) => setProperties(prev => prev.filter(x => x._id !== _id));
+    socket.on('propertyCreated', onCreate);
+    socket.on('propertyUpdated', onUpdate);
+    socket.on('propertyDeleted', onDelete);
+    return () => {
+      socket.off('propertyCreated', onCreate);
+      socket.off('propertyUpdated', onUpdate);
+      socket.off('propertyDeleted', onDelete);
+    };
+  }, []);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -55,7 +77,8 @@ export default function Admin() {
         price: Number(form.price),
         description: form.description,
         propertyLink: form.propertyLink,
-        imageUrl: form.imageUrl
+        imageUrl: form.imageUrl,
+        source: form.source
       };
       if (form.lng !== '' && form.lat !== '') {
         data.lng = parseFloat(form.lng);
@@ -70,20 +93,20 @@ export default function Admin() {
       }
       setForm(emptyProperty);
       setEditingId(null);
-      fetchAll();
     } catch (err) {
       flash(setError, err.response?.data?.message || 'Napaka.');
     }
   };
 
-  const remove = async (id) => {
-    if (!confirm('Izbrišem nepremičnino?')) return;
+  const confirmRemove = async () => {
+    if (!pendingDelete) return;
     try {
-      await propertyApi.remove(id);
+      await propertyApi.remove(pendingDelete._id);
       flash(setSuccess, 'Izbrisano.');
-      fetchAll();
     } catch (err) {
-      flash(setError, 'Napaka pri brisanju.');
+      flash(setError, err.response?.data?.message || 'Napaka pri brisanju.');
+    } finally {
+      setPendingDelete(null);
     }
   };
 
@@ -100,6 +123,7 @@ export default function Admin() {
       description: p.description || '',
       propertyLink: p.propertyLink || '',
       imageUrl: p.imageUrl || '',
+      source: p.source || 'ročno',
       lng: p.coordinates?.coordinates?.[0] ?? '',
       lat: p.coordinates?.coordinates?.[1] ?? ''
     });
@@ -159,6 +183,18 @@ export default function Admin() {
               <input value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} />
             </div>
             <div className="form-group">
+              <label>Vir podatka</label>
+              <input
+                value={form.source}
+                onChange={e => setForm({ ...form, source: e.target.value })}
+                list="source-options"
+                placeholder="npr. ročno"
+              />
+              <datalist id="source-options">
+                {SOURCE_OPTIONS.map(s => <option key={s} value={s} />)}
+              </datalist>
+            </div>
+            <div className="form-group">
               <label>Geo. dolžina (lng) — opcijsko</label>
               <input type="number" step="any" value={form.lng} onChange={e => setForm({ ...form, lng: e.target.value })} placeholder="prazno → samodejno geokodiranje" />
             </div>
@@ -182,26 +218,45 @@ export default function Admin() {
         <h2>Vse nepremičnine ({properties.length})</h2>
         <table>
           <thead>
-            <tr><th>Regija</th><th>Mesto / Naselje</th><th>Ponudba</th><th>Tip</th><th>m²</th><th>Cena</th><th></th></tr>
+            <tr><th>Regija</th><th>Mesto / Naselje</th><th>Ponudba</th><th>Tip</th><th>Vir</th><th>m²</th><th>Cena</th><th></th></tr>
           </thead>
           <tbody>
-            {properties.map(p => (
-              <tr key={p._id}>
-                <td>{p.region}</td>
-                <td>{p.neighborhood ? `${p.neighborhood}, ${p.city}` : p.city}</td>
-                <td>{p.offerType}</td>
-                <td><span className="badge">{p.propertyType}</span></td>
-                <td>{p.size} m²</td>
-                <td>{p.price?.toLocaleString()} €</td>
-                <td>
-                  <button onClick={() => startEdit(p)} style={{ marginRight: 6 }}>Uredi</button>
-                  <button className="danger" onClick={() => remove(p._id)}>Briši</button>
-                </td>
-              </tr>
-            ))}
+            {loading && properties.length === 0 ? (
+              <>
+                <TableRowSkeleton columns={8} />
+                <TableRowSkeleton columns={8} />
+                <TableRowSkeleton columns={8} />
+              </>
+            ) : (
+              properties.map(p => (
+                <tr key={p._id}>
+                  <td>{p.region}</td>
+                  <td>{p.neighborhood ? `${p.neighborhood}, ${p.city}` : p.city}</td>
+                  <td>{p.offerType}</td>
+                  <td><span className="badge">{p.propertyType}</span></td>
+                  <td>{p.source || '—'}</td>
+                  <td>{p.size} m²</td>
+                  <td>{p.price?.toLocaleString()} €</td>
+                  <td>
+                    <button onClick={() => startEdit(p)} style={{ marginRight: 6 }}>Uredi</button>
+                    <button className="danger" onClick={() => setPendingDelete(p)}>Briši</button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Brisanje nepremičnine"
+        message={pendingDelete ? `Ali res želiš izbrisati zapis za ${pendingDelete.city}${pendingDelete.neighborhood ? ` (${pendingDelete.neighborhood})` : ''}?` : ''}
+        confirmLabel="Izbriši"
+        danger
+        onConfirm={confirmRemove}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

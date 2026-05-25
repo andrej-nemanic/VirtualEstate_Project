@@ -13,6 +13,7 @@ data class Property(
     val description: String? = null,
     val propertyLink: String? = null,
     val imageUrl: String? = null,
+    val source: String? = null,
     val lng: Double? = null,
     val lat: Double? = null
 )

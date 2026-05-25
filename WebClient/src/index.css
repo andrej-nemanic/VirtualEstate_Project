@@ -108,6 +108,11 @@ input:focus, select:focus, textarea:focus {
 
 .map-container { height: 500px; border-radius: 10px; overflow: hidden; }
 
+.leaflet-container.draw-active .leaflet-marker-pane,
+.leaflet-container.draw-active .leaflet-shadow-pane {
+  pointer-events: none;
+}
+
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
 th { background: #f9fafb; font-weight: 600; color: #374151; }
@@ -145,4 +150,9 @@ th { background: #f9fafb; font-weight: 600; color: #374151; }
   border-radius: 8px;
   z-index: 2000;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

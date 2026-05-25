@@ -12,12 +12,13 @@ var PropertySchema = new Schema({
     'description': String,
     'propertyLink': String,
     'imageUrl': String,
+    'source': String,
     'coordinates': {
-        type: { type: String, enum: ['Point'], default: 'Point' },
-        coordinates: { type: [Number], default: [0, 0] }
+        type: { type: String, enum: ['Point'] },
+        coordinates: { type: [Number] }
     }
-});
+}, { timestamps: true });
 
-PropertySchema.index({ coordinates: '2dsphere' });
+PropertySchema.index({ coordinates: '2dsphere' }, { sparse: true });
 
 module.exports = mongoose.model('Property', PropertySchema);
