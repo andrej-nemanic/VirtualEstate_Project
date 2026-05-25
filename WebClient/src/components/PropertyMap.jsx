@@ -1,7 +1,9 @@
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
-import { useEffect } from 'react';
+import 'leaflet-draw';
+import 'leaflet-draw/dist/leaflet.draw.css';
+import { useEffect, useRef } from 'react';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -50,21 +52,104 @@ function hasRealCoords(p) {
   return Array.isArray(c) && c.length === 2 && !(c[0] === 0 && c[1] === 0);
 }
 
-function FitBounds({ properties }) {
+function FitBounds({ properties, enabled }) {
   const map = useMap();
   useEffect(() => {
+    if (!enabled) return;
     const coords = properties
       .filter(hasRealCoords)
       .map(p => [p.coordinates.coordinates[1], p.coordinates.coordinates[0]]);
     if (coords.length > 0) {
       map.fitBounds(coords, { padding: [50, 50], maxZoom: 13 });
     }
-  }, [properties, map]);
+  }, [properties, map, enabled]);
   return null;
 }
 
-export default function PropertyMap({ properties }) {
+function DrawControl({ onAreaSelected, onAreaCleared, hasArea }) {
+  const map = useMap();
+  const layerRef = useRef(null);
+  const selectedRef = useRef(onAreaSelected);
+  const clearedRef = useRef(onAreaCleared);
+
+  useEffect(() => { selectedRef.current = onAreaSelected; }, [onAreaSelected]);
+  useEffect(() => { clearedRef.current = onAreaCleared; }, [onAreaCleared]);
+
+  useEffect(() => {
+    const drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+    layerRef.current = drawnItems;
+
+    const control = new L.Control.Draw({
+      position: 'topright',
+      draw: {
+        rectangle: { shapeOptions: { color: '#2563eb', weight: 2 } },
+        polygon: { shapeOptions: { color: '#2563eb', weight: 2 }, allowIntersection: false },
+        circle: { shapeOptions: { color: '#2563eb', weight: 2 } },
+        marker: false,
+        polyline: false,
+        circlemarker: false
+      },
+      edit: { featureGroup: drawnItems, edit: false, remove: true }
+    });
+    map.addControl(control);
+
+    const onCreated = (e) => {
+      drawnItems.clearLayers();
+      drawnItems.addLayer(e.layer);
+
+      if (e.layerType === 'rectangle') {
+        const b = e.layer.getBounds();
+        selectedRef.current?.({
+          type: 'bbox',
+          value: `${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`
+        });
+      } else if (e.layerType === 'polygon') {
+        const latlngs = e.layer.getLatLngs()[0];
+        const value = latlngs.map(p => `${p.lng},${p.lat}`).join(';');
+        selectedRef.current?.({ type: 'polygon', value });
+      } else if (e.layerType === 'circle') {
+        const c = e.layer.getLatLng();
+        const r = Math.round(e.layer.getRadius());
+        selectedRef.current?.({ type: 'near', value: `${c.lng},${c.lat},${r}` });
+      }
+    };
+
+    const onDeleted = () => clearedRef.current?.();
+
+    const container = map.getContainer();
+    const onDrawStart = () => container.classList.add('draw-active');
+    const onDrawStop = () => container.classList.remove('draw-active');
+
+    map.on(L.Draw.Event.CREATED, onCreated);
+    map.on(L.Draw.Event.DELETED, onDeleted);
+    map.on(L.Draw.Event.DRAWSTART, onDrawStart);
+    map.on(L.Draw.Event.DRAWSTOP, onDrawStop);
+
+    return () => {
+      map.off(L.Draw.Event.CREATED, onCreated);
+      map.off(L.Draw.Event.DELETED, onDeleted);
+      map.off(L.Draw.Event.DRAWSTART, onDrawStart);
+      map.off(L.Draw.Event.DRAWSTOP, onDrawStop);
+      container.classList.remove('draw-active');
+      map.removeControl(control);
+      map.removeLayer(drawnItems);
+      layerRef.current = null;
+    };
+  }, [map]);
+
+  useEffect(() => {
+    if (!hasArea && layerRef.current) {
+      layerRef.current.clearLayers();
+    }
+  }, [hasArea]);
+
+  return null;
+}
+
+export default function PropertyMap({ properties, onAreaSelected, onAreaCleared, hasArea }) {
   const center = [46.5547, 15.6459];
+  const drawable = typeof onAreaSelected === 'function';
 
   return (
     <div className="map-container">
@@ -73,7 +158,14 @@ export default function PropertyMap({ properties }) {
           attribution='&copy; OpenStreetMap'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <FitBounds properties={properties} />
+        <FitBounds properties={properties} enabled={!hasArea} />
+        {drawable && (
+          <DrawControl
+            onAreaSelected={onAreaSelected}
+            onAreaCleared={onAreaCleared}
+            hasArea={hasArea}
+          />
+        )}
         <MarkerClusterGroup
           chunkedLoading
           showCoverageOnHover={false}

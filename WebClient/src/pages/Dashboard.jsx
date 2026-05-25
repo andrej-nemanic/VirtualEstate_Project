@@ -7,7 +7,8 @@ import PropertyCharts from '../components/PropertyCharts.jsx';
 import PropertyFilters from '../components/PropertyFilters.jsx';
 import { PropertyGridSkeleton } from '../components/Skeleton.jsx';
 
-const FILTER_KEYS = ['propertyType', 'offerType', 'region', 'city', 'minPrice', 'maxPrice', 'minSize', 'maxSize', 'description'];
+const FILTER_KEYS = ['propertyType', 'offerType', 'region', 'city', 'minPrice', 'maxPrice', 'minSize', 'maxSize', 'description', 'bbox', 'polygon', 'near'];
+const GEO_KEYS = ['bbox', 'polygon', 'near'];
 
 function searchParamsToFilters(sp) {
   const f = {};
@@ -39,6 +40,22 @@ export default function Dashboard() {
   };
 
   const resetFilters = () => setSearchParams({}, { replace: true });
+
+  const activeGeoKey = GEO_KEYS.find(k => filters[k]);
+  const hasArea = Boolean(activeGeoKey);
+
+  const handleAreaSelected = ({ type, value }) => {
+    const next = { ...filters };
+    GEO_KEYS.forEach(k => delete next[k]);
+    next[type] = value;
+    setFilters(next);
+  };
+
+  const handleAreaCleared = () => {
+    const next = { ...filters };
+    GEO_KEYS.forEach(k => delete next[k]);
+    setFilters(next);
+  };
 
   const fetchProperties = async () => {
     setLoading(true);
@@ -93,59 +110,70 @@ export default function Dashboard() {
         onReset={resetFilters}
       />
 
-      {loading ? (
-        <>
-          <div className="grid-3">
-            <div className="card" style={{ height: 260 }} />
-            <div className="card" style={{ height: 260 }} />
-            <div className="card" style={{ height: 260 }} />
-          </div>
-          <div className="card" style={{ height: 500, marginTop: 16 }} />
-          <h2>Seznam</h2>
-          <PropertyGridSkeleton count={6} />
-        </>
+      {loading && properties.length === 0 ? (
+        <div className="grid-3">
+          <div className="card" style={{ height: 260 }} />
+          <div className="card" style={{ height: 260 }} />
+          <div className="card" style={{ height: 260 }} />
+        </div>
       ) : (
-        <>
-          <PropertyCharts properties={properties} />
+        <PropertyCharts properties={properties} />
+      )}
 
-          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <PropertyMap properties={properties} />
-          </div>
+      {hasArea && (
+        <div className="alert alert-success" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>
+            Aktivno območje na zemljevidu ({activeGeoKey === 'bbox' ? 'pravokotnik' : activeGeoKey === 'polygon' ? 'poligon' : 'krog'}) — prikazani so samo zadetki znotraj.
+          </span>
+          <button className="secondary" onClick={handleAreaCleared}>Počisti območje</button>
+        </div>
+      )}
 
-          <h2>Seznam ({properties.length})</h2>
-          <div className="grid-3">
-            {properties.map(p => {
-              const inner = (
-                <>
-                  {p.imageUrl && <img src={p.imageUrl} alt="" style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />}
-                  <span className="badge">{p.propertyType}</span> <span className="badge" style={{ marginLeft: 4 }}>{p.offerType}</span>
-                  {p.source && <span className="badge" style={{ marginLeft: 4, background: '#fef3c7', color: '#92400e' }}>{p.source}</span>}
-                  <h3>{p.neighborhood ? `${p.neighborhood}, ${p.city}` : p.city}</h3>
-                  <div className="meta">{p.region}</div>
-                  <div className="price">{p.price?.toLocaleString()} €</div>
-                  <div className="meta">{p.size} m²</div>
-                  {p.description && <div className="meta" style={{ marginTop: 6 }}>{p.description}</div>}
-                  {p.propertyLink && <div className="meta" style={{ marginTop: 6 }}>Odpri oglas →</div>}
-                </>
-              );
-              return p.propertyLink ? (
-                <a
-                  key={p._id}
-                  href={p.propertyLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="property-card"
-                  style={{ color: 'inherit', textDecoration: 'none', display: 'block', cursor: 'pointer' }}
-                >
-                  {inner}
-                </a>
-              ) : (
-                <div key={p._id} className="property-card">{inner}</div>
-              );
-            })}
-            {properties.length === 0 && <div className="card">Ni rezultatov.</div>}
-          </div>
-        </>
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <PropertyMap
+          properties={properties}
+          onAreaSelected={handleAreaSelected}
+          onAreaCleared={handleAreaCleared}
+          hasArea={hasArea}
+        />
+      </div>
+
+      <h2>Seznam ({loading ? '…' : properties.length})</h2>
+      {loading && properties.length === 0 ? (
+        <PropertyGridSkeleton count={6} />
+      ) : (
+        <div className="grid-3">
+          {properties.map(p => {
+            const inner = (
+              <>
+                {p.imageUrl && <img src={p.imageUrl} alt="" style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />}
+                <span className="badge">{p.propertyType}</span> <span className="badge" style={{ marginLeft: 4 }}>{p.offerType}</span>
+                {p.source && <span className="badge" style={{ marginLeft: 4, background: '#fef3c7', color: '#92400e' }}>{p.source}</span>}
+                <h3>{p.neighborhood ? `${p.neighborhood}, ${p.city}` : p.city}</h3>
+                <div className="meta">{p.region}</div>
+                <div className="price">{p.price?.toLocaleString()} €</div>
+                <div className="meta">{p.size} m²</div>
+                {p.description && <div className="meta" style={{ marginTop: 6 }}>{p.description}</div>}
+                {p.propertyLink && <div className="meta" style={{ marginTop: 6 }}>Odpri oglas →</div>}
+              </>
+            );
+            return p.propertyLink ? (
+              <a
+                key={p._id}
+                href={p.propertyLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="property-card"
+                style={{ color: 'inherit', textDecoration: 'none', display: 'block', cursor: 'pointer' }}
+              >
+                {inner}
+              </a>
+            ) : (
+              <div key={p._id} className="property-card">{inner}</div>
+            );
+          })}
+          {properties.length === 0 && <div className="card">Ni rezultatov.</div>}
+        </div>
       )}
 
       {toast && <div className="toast">{toast}</div>}

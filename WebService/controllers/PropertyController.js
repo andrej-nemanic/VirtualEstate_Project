@@ -30,6 +30,54 @@ function pick(obj, keys) {
     return out;
 }
 
+const EARTH_RADIUS_M = 6378137;
+
+function parseBbox(value) {
+    const parts = String(value).split(',').map(s => parseFloat(s.trim()));
+    if (parts.length !== 4 || parts.some(n => Number.isNaN(n))) return null;
+    const [minLng, minLat, maxLng, maxLat] = parts;
+    if (minLng >= maxLng || minLat >= maxLat) return null;
+    return [
+        [minLng, minLat],
+        [maxLng, minLat],
+        [maxLng, maxLat],
+        [minLng, maxLat],
+        [minLng, minLat]
+    ];
+}
+
+function parsePolygon(value) {
+    const points = String(value).split(';').map(pair => {
+        const [lng, lat] = pair.split(',').map(s => parseFloat(s.trim()));
+        return [lng, lat];
+    });
+    if (points.length < 3 || points.some(p => p.some(n => Number.isNaN(n)))) return null;
+    const first = points[0];
+    const last = points[points.length - 1];
+    if (first[0] !== last[0] || first[1] !== last[1]) points.push([first[0], first[1]]);
+    return points;
+}
+
+function buildGeoFilter(query) {
+    if (query.bbox) {
+        const ring = parseBbox(query.bbox);
+        if (!ring) return null;
+        return { coordinates: { $geoWithin: { $geometry: { type: 'Polygon', coordinates: [ring] } } } };
+    }
+    if (query.polygon) {
+        const ring = parsePolygon(query.polygon);
+        if (!ring) return null;
+        return { coordinates: { $geoWithin: { $geometry: { type: 'Polygon', coordinates: [ring] } } } };
+    }
+    if (query.near) {
+        const parts = String(query.near).split(',').map(s => parseFloat(s.trim()));
+        if (parts.length !== 3 || parts.some(n => Number.isNaN(n))) return null;
+        const [lng, lat, distance] = parts;
+        return { coordinates: { $geoWithin: { $centerSphere: [[lng, lat], distance / EARTH_RADIUS_M] } } };
+    }
+    return null;
+}
+
 function buildListFilter(query) {
     const filter = {};
     if (query.propertyType) filter.propertyType = { $regex: query.propertyType, $options: 'i' };
@@ -48,6 +96,8 @@ function buildListFilter(query) {
         if (query.minSize) filter.size.$gte = parseFloat(query.minSize);
         if (query.maxSize) filter.size.$lte = parseFloat(query.maxSize);
     }
+    const geo = buildGeoFilter(query);
+    if (geo) Object.assign(filter, geo);
     return filter;
 }
 

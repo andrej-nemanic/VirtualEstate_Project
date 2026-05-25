@@ -108,6 +108,11 @@ input:focus, select:focus, textarea:focus {
 
 .map-container { height: 500px; border-radius: 10px; overflow: hidden; }
 
+.leaflet-container.draw-active .leaflet-marker-pane,
+.leaflet-container.draw-active .leaflet-shadow-pane {
+  pointer-events: none;
+}
+
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
 th { background: #f9fafb; font-weight: 600; color: #374151; }
