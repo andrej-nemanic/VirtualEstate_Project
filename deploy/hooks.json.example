@@ -1,0 +1,25 @@
+[
+  {
+    "id": "deploy",
+    "execute-command": "/home/VirtualEstate/VirtualEstate_Project/deploy/deploy.sh",
+    "command-working-directory": "/home/VirtualEstate/VirtualEstate_Project",
+    "response-message": "Deploy triggered.\n",
+    "response-headers": [
+      { "name": "Content-Type", "value": "text/plain" }
+    ],
+    "trigger-rule": {
+      "match": {
+        "type": "value",
+        "value": "REPLACE_WITH_WEBHOOK_SECRET",
+        "parameter": {
+          "source": "header",
+          "name": "X-Webhook-Token"
+        }
+      }
+    },
+    "pass-arguments-to-command": [
+      { "source": "payload", "name": "commit" },
+      { "source": "payload", "name": "ref" }
+    ]
+  }
+]
