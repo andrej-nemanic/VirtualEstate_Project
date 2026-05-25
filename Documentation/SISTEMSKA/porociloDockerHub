@@ -1,19 +1,81 @@
 # 3. GitHub Actions Workflows
 
 V mapi .github/workflows/ smo ustvarili konfiguracijsko datoteko cicd.yml, ki natančno definira delovni tok.
-## 3.1 Konfiguracija GitHub Secrets
+## 1. Docker Hub container registry in objava
+### 1.1. Vzpostavitev DockerHub repozitorija za slike
 
-Za preprečevanje izpostavljanja občutljivih podatkov v javni kodi smo v nastavitvah GitHub repozitorija (Settings -> Secrets and variables -> Actions) definirali naslednje skrivnosti (Secrets):
+Za DockerHub račun sva uporabila račun andrejnemanic27a, ki je bil že ustvarjen.
+V DockerHub-u sva ustvarila glavni Docker repozitorij in javna Docker repozitorija za spletni vmesnik in spletno storitev.
 
-    DOCKER_HUB_USERNAME: Uporabniško ime za Docker Hub.
+![Nadzorna plošča DockerHub](./images/imagesDockerHub/2026-05-25_13-31.png)
+![Kreiranje docker repozitorija](./images/imagesDockerHub/2026-05-25_13-32.png)
+![Kreiranje docker repozitorija za spletno storitev](./images/imagesDockerHub/2026-05-25_13-33.png)
+![Prikaz Docker repozitorija za spletno storitev](./images/imagesDockerHub/2026-05-25_13-33_1.png)
+![Kreiranje docker repozitorija za spletni vmesnik](./images/imagesDockerHub/2026-05-25_13-34.png)
+![Prikaz javnih Docker repozitorijev za spletno storitev in spletni vmesnik](./images/imagesDockerHub/2026-05-25_13-34_1.png)
+![Prikaz javnega Docker repozitorija za spletno storitev](./images/imagesDockerHub/2026-05-25_13-57_1.png)
+![Prikaz javnega Docker repozitorija za spletni vmesnik](./images/imagesDockerHub/2026-05-25_13-57.png)
+### 1.2. Generiranje žetona za dostop (Personal Access Tokens) na DockerHub-u in prijava
 
-    DOCKER_HUB_TOKEN: Personal Access Token (PAT) ustvarjen znotraj Docker Hub-a (varneje kot glavno geslo).
+Na DockerHub-u sva generirala žeton za dostop, ki sva ga poimenovala local-cli. S pomočjo njega sva se lahko oba prijavila v račun andrejnemanic27a. Uporabila sva ukaz:
+```sh
+docker login -u andrejnemanic27a
+```
 
-    WEBHOOK_URL: Polni URL naslov do webhook strežnika na Azure VM (npr. http://<azure-vm-ip>:<port>/webhook).
+![Kreiranje žetona local-cli](./images/imagesDockerHub/2026-05-25_13-37.png)
+![Prikaz žetona local-cli](./images/imagesDockerHub/2026-05-25_13-37_1.png)
+![Prijava (Nik Šignjar Žilavec)](./images/imagesDockerHub/image.png)
+![Prijava (Andrej Nemanič)](./images/imagesDockerHub/2026-05-25_16-00.png)
 
-    WEBHOOK_SECRET: Skrivni žeton (token) za validacijo avtentičnosti zahteve na strani strežnika.
 
-## 3.2 Celotna koda delovnega toka (.github/workflows/cicd.yml)
+### 1.3. Lokalna gradnja Docker slik za spletni vmesnik in spletno storitev
+Za lokalno gradnjo Docker slik sva izvedla ukaza:
+```sh
+docker build -t andrejnemanic27a/virtualestate-web-service:latest ./WebService
+docker build -t andrejnemanic27a/virtualestate-web-client:latest ./WebClient
+```
+![Lokalna gradnja Docker slik](./images/imagesDockerHub/image1.png)
+
+### 1.4. Objava obeh slik na DockerHub
+Za objavo obeh slik na DockerHub sva uporabila ukaza:
+```sh
+docker push andrejnemanic27a/virtualestate-web-service:latest
+docker push andrejnemanic27a/virtualestate-web-client:latest
+```
+Da sva se prepričala, da sta sliki objavljeni, sva šla pogledat na DockerHub, če obstajata tako imenovana 'tags', instanci teh dveh slik.
+
+![Objava obeh slik na DockerHub](./images/imagesDockerHub/image2.png)
+![Prikaz javnega Docker repozitorija za spletno storitev(Tag)](./images/imagesDockerHub/2026-05-25_13-58_1.png)
+![Prikaz javnega Docker repozitorija za spletni vmesnik (Tag)](./images/imagesDockerHub/2026-05-25_13-58.png)
+
+
+## 2. GitHub Actions workflows
+
+### 2.1. Konfiguracija varnostnih mehanizmov (GitHub Secrets)
+
+Zaradi varnostnih standardov in preprečevanja uhajanja občutljivih podatkov v javni repozitorij, smo vse kritične podatke shranili v repozitorij med skrivnosti (Settings -> Secrets and variables -> Actions).
+
+Dodali smo 4 ključne spremenljivke:
+
+- DOCKERHUB_USERNAME: Uporabniško ime za dostop do Docker Hub računa (andrejnemanic27a).
+- DOCKERHUB_TOKEN: Varnostni žeton (Access Token) ustvarjen na Docker Hubu za avtentikacijo.
+- WEBHOOK_URL: Ciljni naslov strežnika, ki sprejema zahteve za namestitev (http://68.210.138.100:9000/hooks/deploy).
+- WEBHOOK_SECRET: Kriptografski žeton za avtentikacijo zahteve na strani strežnika, generiran lokalno s pomočjo Node.js kriptografske knjižnice: Bash
+```
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+### 2.2. Urejanje obstoječih delovnih tokov (Workflows)
+
+Pred implementacijo novega cevovoda smo očistili in prilagodili obstoječe delovne tokove v mapi .github/workflows/:
+
+- Odstranitev privzetega koraka: Odstranili smo privzeto generiran delovni tok docker-image.yml (git rm .github/workflows/docker-image.yml), saj je zgolj gradil testno Alpine sliko brez možnosti potiskanja na oddaljeni register.
+- Ohranitev CI delovnega toka: Ohranili smo obstoječ delovni tok desktop-ci.yml, ki skrbi za neprekinjeno integracijo Kotlin namizne aplikacije (Java 17, Gradle build in preverjanje kode). Ta se še naprej sproža ločeno ob dogodkih push in pull_request.
+
+### 2.3. Implementacija glavnega delovnega toka za namestitev (deploy.yml)
+
+- Ustvarili smo novo datoteko .github/workflows/deploy.yml. Konfiguracija vsebuje dve zaporedni opravili (jobs), pri čemer je izvajanje drugega pogojevano z uspešnostjo prvega.
+YAML konfiguracija delovnega toka:
 ```yaml
 name: Build & Deploy
 
@@ -60,194 +122,40 @@ jobs:
             -d '{"commit":"${{ github.sha }}","ref":"${{ github.ref }}"}' \
             "${{ secrets.WEBHOOK_URL }}"
 ```
+### 2.4. Analiza izvajanja in trenutno stanje
 
-    [ZASLONSKI POSNETEK: GitHub Actions zavihek, ki prikazuje zelene kljukice za opravili 'build-and-push' in 'trigger-webhook']
+Po oddaji sprememb v repozitorij (git add, git commit, git push) in združitvi v vejo develop, se je delovni tok avtomatsko sprožil. Rezultati v zavihku Actions so bili naslednji:
 
-3.3 Potencialne nadgradnje delovnega toka (Dodatni Workflows)
+- build-and-push (USPEŠNO - ZELENO): Opravilo se je izvajalo med 1 in 3 minutami. Slike za WebService in WebClient so se uspešno zgradile, označile z značko latest in specifičnim SHA zavezave (github.sha) ter uspešno prenesle na Docker Hub.
+- trigger-deploy (NEUSPEŠNO - RDEČE): Kot je bilo pričakovano pred celotno nastavitvijo navideznega stroja (VM), je korak curl javil napako (timeout). Spletna kljukica na ciljnem strežniku še ni bila aktivna ali dostopna, kar potrjuje pravilnost logike needs: build-and-push – opravilo se je poskusilo izvesti šele po uspešnem prenosu slik.
 
-V prihodnjih fazah projekta bi lahko delovni tok razširili z naslednjimi opravili in procesi:
+### 2.5. Predlogi za dodatne GitHub Actions delovne tokove v projektu
 
-    Linterji in statična analiza kode (Code Quality):
+- Za dvig kakovosti kode in večjo stabilnost projekta VirtualEstate_Project bi bilo smiselno uvesti naslednje dodatne delovne tokove:
+### 2.6. Statistična analiza kode in Linterji (Code Quality)
 
-        Dodali bi korak pred izgradnjo slike, ki uporablja orodja kot so ESLint (za JavaScript/TypeScript), Flake8 (za Python) ali SonarQube. To preprečuje integracijo sintaktično nepravilne ali slabo napisane kode.
+- Kaj: Implementacija orodij kot sta Ktlint (za Kotlin del) in ESLint (če WebClient uporablja JavaScript/TypeScript).
 
-    Avtomatsko testiranje (Unit & Integration Tests):
+- Kako/Kje: Ustvarili bi delovni tok .github/workflows/lint.yml, ki bi se sprožil ob vsakem pull_request na veji main in develop. Preverjal bi skladnost oblikovanja kode s standardi pred združevanjem.
 
-        Zagon testov znotraj začasnega okolja v GitHub Actions (npm test, pytest). Če testi spodletijo, se proces prekine, s čimer zagotovimo, da pokvarjena koda nikoli ne doseže Docker Huba ali produkcije.
+### 2.7. Avtomatizirano testiranje (Unit & Integration Tests)
 
-    Skeniranje varnostnih lukenj v slikah (Docker Vulnerability Scanning):
+- Kaj: Ločeno izvajanje celotne testne zbirke za backend storitve (WebService).
 
-        Uporaba orodij kot sta Trivy ali Snyk neposredno v workflowu. Orodje pregleda osnovno sliko (base image) in knjižnice ter opozori na kritične varnostne pomanjkljivosti pred objavo.
+- Kako/Kje: Delovni tok .github/workflows/backend-tests.yml. Ob vsakem potisku kode bi zagnal Docker-compose okolje s testno bazo podatkov in izvedel teste (npr. ./gradlew test ali ekvivalent v ogrodju), s čimer bi preprečili regresijo napak v produkciji.
 
-    Upravljanje z različicami (Semantic Versioning):
+### 2.8. Varnostno pregledovanje slik (Security Vulnerability Scanning)
 
-        Namesto fiksne oznake latest bi lahko uporabili GitHub oznake (tags), ki ob izdaji (Release) avtomatično označijo sliko s številko različice (npr. v1.2.3).
+- Kaj: Iskanje znanih varnostnih lukenj v Docker slikah in odvisnostih projekta.
 
-4. Webhook in Osveževanje na Strežniku
+- Kako/Kje: Integracija orodja Trivy ali Snyk neposredno v deploy.yml ali kot samostojen tok .github/workflows/security.yml. Pregled bi javil napako, če bi Docker slika vsebovala kritične varnostne pomanjkljivosti (CVE).
 
-Na našem virtualnem računalniku Azure VM smo vzpostavili poslušalca (listener), ki čaka na zahteve iz GitHub Actions in sproži skripto za posodobitev.
-4.1 Implementacija Webhook strežnika (Python primer)
+### 2.9. Avtomatsko generiranje izdaj (Release Management)
 
-Uporabili smo preprost in lahek Python strežnik s pomočjo ogrodja Flask. Strežnik posluša na določenih vratih (npr. 5000) in ob prejemu zahteve preveri varnostni žeton.
+- Kaj: Ko se koda združi v main vejo in se ustvari nova verzijska značka (git tag v1.0.0), sistem avtomatsko zbere dnevnik sprememb (changelog) in ustvari "GitHub Release".
 
-Datoteka na strežniku: /opt/webhook/webhook_server.py
-Python
+- Kako/Kje: .github/workflows/release.yml, ki se sproži izključno na tags: ['v*']. Kot artefakt lahko priloži tudi zgrajeno namizno Kotlin aplikacijo (desktop-ci.yml izhod).
 
-from flask import Flask, request, abort
-import subprocess
-import os
+## 3. Webhooks
 
-app = Flask(__name__)
-
-# Skrivni žeton, ki se mora ujemati z GitHub Secret vrednostjo
-SECRET_TOKEN = os.getenv("WEBHOOK_SECRET", "MojaZeloVarnaSkrivnost123!")
-SCRIPT_PATH = "/opt/webhook/deploy.sh"
-
-@app.route('/webhook', methods=['POST'])
-def webhook():
-    # Preverjanje varnostnega glava žetona
-    token = request.headers.get('X-Webhook-Secret')
-    if not token or token != SECRET_TOKEN:
-        abort(403, "Nepooblaščen dostop: Napačen ali manjkajoč žeton.")
-    
-    # Če je žeton pravilen, poženemo skripto za namestitev
-    try:
-        # Izvajanje skripte v ozadju
-        subprocess.Popen(["bash", SCRIPT_PATH])
-        return {"status": "Deployment started"}, 200
-    except Exception as e:
-        return {"error": str(e)}, 500
-
-if __name__ == '__main__':
-    # Deluje na vseh vmesnikih na vratih 5000
-    app.run(host='0.0.0.0', port=5000)
-
-4.2 Skripta za osvežitev vsebnika (deploy.sh)
-
-Ta skripta izvede čiščenje in zagon nove različice. Nastavljene ima ustrezne pravice za izvajanje (chmod +x deploy.sh).
-
-Datoteka na strežniku: /opt/webhook/deploy.sh
-Bash
-
-#!/bin/bash
-
-echo "=== Zagon posodobitve aplikacije: $(date) ==="
-
-CONTAINER_NAME="moja-aplikacija-prod"
-IMAGE_NAME="mojauporabnik/moja-aplikacija:latest"
-
-# 1. Prenos najnovejše slike iz Docker Huba
-echo "Prenašam najnovejšo Docker sliko..."
-docker pull $IMAGE_NAME
-
-# 2. Zaustavitev trenutnega vsebnika, če obstaja
-if [ "$(docker ps -a -q -f name=$CONTAINER_NAME)" ]; then
-    echo "Zaustavljam trenutni vsebnik..."
-    docker stop $CONTAINER_NAME
-    echo "Odstranjujem stari vsebnik..."
-    docker rm $CONTAINER_NAME
-fi
-
-# 3. Zagon novega vsebnika z ustreznimi porti
-echo "Zaganjam nov vsebnik..."
-docker run -d \
-  --name $CONTAINER_NAME \
-  -p 80:8080 \
-  --restart unless-stopped \
-  $IMAGE_NAME
-
-# 4. Čiščenje starih, neaktivnih slik za sprostitev prostora
-echo "Čiščenje neuporabljenih Docker komponent..."
-docker system prune -f
-
-echo "=== Posodobitev uspešno zaključena! ==="
-
-5. Varnostna analiza in izboljšave (Security Breakdown)
-
-Uporaba spletnih javljalnikov (Webhookov) brez dodatne zaščite predstavlja resno varnostno tveganje. Spodaj so opisane identificirane varnostne luknje in načini, kako smo jih odpravili oz. kako bi jih morali odpraviti v produkcijskem okolju.
-5.1 Identificirane varnostne luknje in pomisleki
-
-    Ponarejanje zahtev (Request Forgery / Spoofing):
-
-        Problem: Če napadalec ugotovi IP naslov in vrata našega Azure VM-ja ter pot /webhook, lahko pošilja lažne POST zahteve. To bi povzročilo nenehno ponovno zaganjanje vsebnika, kar vodi v napad Denial of Service (DoS) ali prenos zlonamerne slike, če bi napadalec spremenil parametre.
-
-    Prisluškovanje prometu (Cleartext HTTP):
-
-        Problem: Če webhook komunicira preko navadnega http:// protokola, se vsi podatki in avtentikacijski žetoni prenašajo v nešifrirani obliki, kar omogoča napade s poslušanjem vmesnega prometa (Man-in-the-Middle).
-
-    Pravice izvajanja na strežniku (Privilege Escalation):
-
-        Problem: Skripta deploy.sh izvaja Docker ukaze, ki običajno zahtevajo root oz. sudo pravice. Če spletni strežnik (Flask) teče z najvišjimi pravicami in vsebuje programsko hrošča, lahko napadalec prevzame popoln nadzor nad celotnim Azure VM sistemom.
-
-5.2 Izvedene in predlagane rešitve
-
-    Validacija s skrivnim žetonom (Že izvedeno): V implementaciji Flask strežnika preverjamo glavo X-Webhook-Secret. Zahteve brez pravilnega žetona so takoj zavrnjene s kodo 403 Forbidden.
-
-    Implementacija HTTPS (SSL/TLS): Namestitev obratnega posrednika (Reverse Proxy), kot je Nginx, pred Flask strežnik, ter pridobitev brezplačnega certifikata Let's Encrypt. Promet med GitHub Actions in Azure VM poteka izključno preko šifriranega kanala HTTPS.
-
-    Omejitev IP naslovov (Firewall / Azure NSG): V nastavitvah Azure Network Security Group (NSG) omejimo dostop do vrat webhook strežnika (npr. 5000 ali 443) samo na uradne GitHubove IP naslove (GitHub objavlja seznam svojih IP naslovov za webhooke). Vsi ostali IP naslovi so blokirani na nivoju požarne pregrade.
-
-    Uporaba namenskega sistemskega uporabnika: Flask strežnik ne teče kot root, temveč kot omejen sistemski uporabnik (npr. webhookuser), ki ima preko sudoers konfiguracije dovoljenje za izvajanje izključno specifične skripte deploy.sh.
-
-6. Vodenje projekta in Sprintov (Agilni pristop)
-
-Za uspešno koordinacijo v mikro-skupini je vodja projekta vzpostavil agilno vodenje s pomočjo orodja Jira (alternativno OpenProj). Projekt je bil razdeljen na eno-tedenski sprint z jasnimi zadolžitvami.
-6.1 Struktura opravil v Jira backlogu:
-
-    TASK-1: Nastavitev okolja in Docker Hub registracija (Dodeljeno: Vodja)
-
-    TASK-2: Izdelava Dockerfile datoteke in lokalno testiranje (Dodeljeno: Razvijalec 1)
-
-    TASK-3: Konfiguracija .github/workflows/cicd.yml in nastavitev Secrets (Dodeljeno: Razvijalec 2)
-
-    TASK-4: Vzpostavitev Webhook poslušalca na Azure VM (Dodeljeno: Vodja / Razvijalec 1)
-
-    TASK-5: Priprava končnega poročila in testiranje celotnega toka (Vsi člani)
-
-    [ZASLONSKI POSNETEK: Jira Kanban tabla, ki prikazuje stolpce 'To Do', 'In Progress', 'In Review' in 'Done' z uspešno zaključenimi nalogami sprinta]
-
-7. Zaključek in Težave ter Rešitve
-Težave med razvojem:
-
-    Težava s pravicami Docker-ja: Na začetku Flask strežnik ni mogel izvesti ukaza docker pull, ker uporabnik pod katerim je tekel strežnik, ni bil del docker skupine.
-
-        Rešitev: Uporabnika smo dodali v skupino z ukazom sudo usermod -aG docker webhookuser in ponovno zagnali storitev.
-
-    Težava s potekom časa (Timeout) v GitHub Actions: Webhook action je čakal na zaključek skripte deploy.sh. Ker je prenos slike trajal nekaj minut, je GitHub včasih javil napako zaradi poteka časa.
-
-        Rešitev: V Python kodi smo zamenjali sinhroni klic subprocess.run() z asinhronim subprocess.Popen(), ki takoj vrne odgovor GitHubu, sama namestitev pa nemoteno steče v ozadju strežnika.
-
-S tem je bil celoten CI/CD delovni tok uspešno vzpostavljen, testiran in pripravljen za zagovor vaj.
-"""
-
-with open("porocilo_cicd_projekt.md", "w", encoding="utf-8") as f:
-f.write(content)
-
-print("File generated successfully as porocilo_cicd_projekt.md")
-
-Vaša Markdown datoteka s poročilom za drugo projektno nalogo je pripravljena.
-
-[file-tag: code-generated-file-0-1779714474652024096]
-
-Generirana datoteka `porocilo_cicd_projekt.md` v celoti izpolnjuje vse zahteve iz vaših navodil. Napisana je v strokovnem slovenskem jeziku in vsebuje strukturirana poglavja, ki jih lahko neposredno oddate ali po potrebi dopolnite z lastnimi podatki.
-
-### Kaj vsebuje generirano poročilo:
-
-1. **Uvod in Arhitektura sistema:** Pregled komponent (Azure VM, GitHub Actions, Docker Hub) in opis delovanja celotnega CI/CD toka.
-2. **Docker Hub Container Registry:**
-   * Dokumentacija ključnih Docker CLI ukazov (`docker login`, `build`, `push`, `pull`, `stop`, `rm`, `run`, `system prune`) z razlagami.
-   * Mesta za zaslonske posnetke uspešnega potiska slike na Docker Hub.
-3. **GitHub Actions Workflows:**
-   * Celotna, pripravljena konfiguracijska datoteka `.github/workflows/cicd.yml` s sekcijo `needs: build-and-push`, kar zagotavlja, da se webhook sproži le ob uspešni izgradnji.
-   * Razlaga uporabe GitHub Secrets za varno shranjevanje žetonov in gesel.
-   * **Dodatni workflows:** Podroben opis, kako bi lahko projekt nadgradili z linterji (npr. ESLint, Flake8), avtomatskimi testi (Unit/Integration tests), skeniranjem varnostnih lukenj (Trivy/Snyk) in semantičnim verzijoniranjem.
-4. **Webhook in avtomatizacija na Azure VM:**
-   * **Python Flask Webhook strežnik:** Priložena koda za preprost produkcijski poslušalec zahtev, ki vključuje validacijo varnostnega žetona (`X-Webhook-Secret`).
-   * **Namestitvena skripta (`deploy.sh`):** Bash skripta, ki ob klicu potegne novo sliko, varno zaustavi in odstrani star vsebnik, zažene novega s pravilnimi porti ter počisti stare neuporabljene Docker komponente za varčevanje s prostorom na Azure.
-5. **Varnostna analiza in izboljšave (Security Breakdown):**
-   * Detajlna razlaga varnostnih tveganj (ponarejanje zahtev, prisluškovanje na HTTP prometu, eskacija pravic).
-   * Rešitve, kot so preverjanje žetona, implementacija HTTPS (Nginx reverse proxy + Let's Encrypt), omejevanje IP naslovov preko Azure NSG požarne pregrade in zagon pod omejenim sistemskim uporabnikom.
-6. **Vodenje projekta (Sprint):** Opis razdelitve nalog znotraj enotedenskega sprinta s pomočjo orodja Jira/Kanban (vloga vodje mikro-skupine).
-7. **Težave in rešitve:** Realna primera tehničnih težav (pravice Docker skupine na strežniku in preprečevanje potečenega časa / timeouta z asinhronim zagonom preko `subprocess.Popen`).
-
-*Opomba: Pred oddajo v datoteko na označena mesta (npr. `> **[ZASLONSKI POSNETEK...]**`)
+### 3.1 
