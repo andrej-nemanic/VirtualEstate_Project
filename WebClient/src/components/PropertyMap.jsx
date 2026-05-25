@@ -4,6 +4,8 @@ import L from 'leaflet';
 import 'leaflet-draw';
 import 'leaflet-draw/dist/leaflet.draw.css';
 import { useEffect, useRef } from 'react';
+import { useTheme } from '../context/ThemeContext.jsx';
+import { hasSize } from '../constants.js';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -150,14 +152,18 @@ function DrawControl({ onAreaSelected, onAreaCleared, hasArea }) {
 export default function PropertyMap({ properties, onAreaSelected, onAreaCleared, hasArea }) {
   const center = [46.5547, 15.6459];
   const drawable = typeof onAreaSelected === 'function';
+  const { theme } = useTheme();
+  const tileUrl = theme === 'dark'
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const tileAttr = theme === 'dark'
+    ? '&copy; OpenStreetMap &copy; CARTO'
+    : '&copy; OpenStreetMap';
 
   return (
     <div className="map-container">
       <MapContainer center={center} zoom={8} style={{ height: '100%', width: '100%' }}>
-        <TileLayer
-          attribution='&copy; OpenStreetMap'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+        <TileLayer key={theme} attribution={tileAttr} url={tileUrl} />
         <FitBounds properties={properties} enabled={!hasArea} />
         {drawable && (
           <DrawControl
@@ -190,7 +196,7 @@ export default function PropertyMap({ properties, onAreaSelected, onAreaCleared,
                     {p.neighborhood ? `${p.neighborhood}, ${p.city}` : p.city}
                     {p.region && <> ({p.region})</>}<br />
                     Cena: <b>{p.price?.toLocaleString()} €</b><br />
-                    Velikost: {p.size} m²<br />
+                    {hasSize(p) && <>Velikost: {p.size} m²<br /></>}
                     {p.source && <span className="badge" style={{ marginTop: 4 }}>{p.source}</span>}
                     {p.description && <div style={{ marginTop: 4, fontStyle: 'italic', fontSize: 12 }}>{p.description.substring(0, 120)}{p.description.length > 120 ? '…' : ''}</div>}
                     {p.propertyLink && (
