@@ -13,14 +13,13 @@ export default function Login() {
     e.preventDefault();
     setError('');
     const res = await login(email, password);
-    if (res.ok) navigate('/dashboard');
+    if (res.ok) navigate('/', { replace: true });
     else setError(res.message);
   };
 
   return (
     <div className="auth-page">
       <h1>Prijava</h1>
-      <p className="auth-subtitle">Dobrodošel nazaj — vpiši svoje podatke.</p>
       <form onSubmit={handleSubmit}>
         {error && <div className="alert alert-error">{error}</div>}
         <div className="form-group">

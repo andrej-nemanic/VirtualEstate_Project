@@ -33,11 +33,26 @@ export default function PropertyFilters({ filters, setFilters, onReset }) {
   return (
     <div className="card filters-bar">
       <div className="filter-toolbar">
-        <div className="grow">
+        <div className="grow search-field">
+          <svg
+            className="search-icon"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
           <input
             value={filters.description || ''}
             onChange={e => update('description', e.target.value)}
-            placeholder="🔍 Iskanje po opisu (npr. balkon, parking, terasa…)"
+            placeholder="Iskanje po opisu (npr. balkon, parking, terasa…)"
           />
         </div>
         <select

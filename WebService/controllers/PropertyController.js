@@ -78,14 +78,18 @@ function buildGeoFilter(query) {
     return null;
 }
 
+function escapeRegex(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function buildListFilter(query) {
     const filter = {};
-    if (query.propertyType) filter.propertyType = { $regex: query.propertyType, $options: 'i' };
+    if (query.propertyType) filter.propertyType = { $regex: escapeRegex(query.propertyType), $options: 'i' };
     if (query.offerType) filter.offerType = query.offerType;
-    if (query.city) filter.city = { $regex: query.city, $options: 'i' };
-    if (query.region) filter.region = { $regex: query.region, $options: 'i' };
-    if (query.source) filter.source = { $regex: query.source, $options: 'i' };
-    if (query.description) filter.description = { $regex: query.description, $options: 'i' };
+    if (query.city) filter.city = { $regex: escapeRegex(query.city), $options: 'i' };
+    if (query.region) filter.region = { $regex: escapeRegex(query.region), $options: 'i' };
+    if (query.source) filter.source = { $regex: escapeRegex(query.source), $options: 'i' };
+    if (query.description) filter.description = { $regex: escapeRegex(query.description), $options: 'i' };
     if (query.minPrice || query.maxPrice) {
         filter.price = {};
         if (query.minPrice) filter.price.$gte = parseFloat(query.minPrice);
