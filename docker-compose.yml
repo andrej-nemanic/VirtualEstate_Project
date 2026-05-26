@@ -1,0 +1,30 @@
+services:
+  web-service:
+    image: andrejnemanic27a/virtualestate-web-service:latest
+    build: ./WebService
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./WebService/.env
+    environment:
+      - NODE_ENV=development
+    restart: always
+    networks:
+      - app-network
+
+  web-client:
+    image: andrejnemanic27a/virtualestate-web-client:latest
+    build: ./WebClient
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_PROXY=http://web-service:3000
+    restart: always
+    depends_on:
+      - web-service
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

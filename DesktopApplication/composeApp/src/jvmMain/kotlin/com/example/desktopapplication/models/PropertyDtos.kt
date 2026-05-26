@@ -1,0 +1,85 @@
+package com.example.desktopapplication.models
+
+data class PropertyIngestDto(
+    val region: String,
+    val city: String,
+    val neighborhood: String,
+    val offerType: String,
+    val propertyType: String,
+    val size: Double,
+    val price: Double,
+    val description: String? = null,
+    val propertyLink: String? = null,
+    val imageUrl: String? = null,
+    val source: String? = null,
+    val lat: Double? = null,
+    val lng: Double? = null
+)
+
+data class CoordinatesDto(
+    val type: String? = null,
+    val coordinates: List<Double>? = null
+)
+
+data class PropertyResponseDto(
+    val _id: String? = null,
+    val region: String? = null,
+    val city: String? = null,
+    val neighborhood: String? = null,
+    val offerType: String? = null,
+    val propertyType: String? = null,
+    val size: Double? = null,
+    val price: Double? = null,
+    val description: String? = null,
+    val propertyLink: String? = null,
+    val imageUrl: String? = null,
+    val source: String? = null,
+    val coordinates: CoordinatesDto? = null
+)
+
+object PropertyMapper {
+
+    fun toIngest(
+        property: Property,
+        lng: Double? = null,
+        lat: Double? = null
+    ): PropertyIngestDto = PropertyIngestDto(
+        region = property.region,
+        city = property.city,
+        neighborhood = property.neighborhood,
+        offerType = property.offerType,
+        propertyType = property.propertyType,
+        size = property.size,
+        price = property.price,
+        description = property.description,
+        propertyLink = property.propertyLink,
+        imageUrl = property.imageUrl,
+        source = property.source,
+        lng = lng ?: property.lng,
+        lat = lat ?: property.lat
+    )
+
+    fun fromResponse(dto: PropertyResponseDto, localId: Int): Property {
+        val coords = dto.coordinates?.coordinates
+        val lng = coords?.getOrNull(0)
+        val lat = coords?.getOrNull(1)
+        val hasReal = lng != null && lat != null && !(lng == 0.0 && lat == 0.0)
+        return Property(
+            id = localId,
+            apiId = dto._id,
+            region = dto.region ?: "",
+            city = dto.city ?: "",
+            neighborhood = dto.neighborhood ?: "",
+            offerType = dto.offerType ?: "Prodaja",
+            propertyType = dto.propertyType ?: "",
+            size = dto.size ?: 0.0,
+            price = dto.price ?: 0.0,
+            description = dto.description,
+            propertyLink = dto.propertyLink,
+            imageUrl = dto.imageUrl,
+            source = dto.source,
+            lng = if (hasReal) lng else null,
+            lat = if (hasReal) lat else null
+        )
+    }
+}
