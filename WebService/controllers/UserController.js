@@ -48,7 +48,7 @@ module.exports = {
                 name: String(req.body.name).trim(),
                 email: String(req.body.email).trim().toLowerCase(),
                 password: req.body.password,
-                isAdmin: req.body.isAdmin === true
+                isAdmin: false
             });
             const saved = await user.save();
             const obj = saved.toObject();
@@ -138,7 +138,12 @@ module.exports = {
         try {
             const user = await UserModel.findById(req.user.id).select('-password');
             if (!user) return res.status(404).json({ message: 'Uporabnik ne obstaja.' });
-            return res.json(user);
+            return res.json({
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                isAdmin: user.isAdmin
+            });
         } catch (err) {
             return handleDuplicateOrError(res, err, 'Napaka pri branju računa.');
         }

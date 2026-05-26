@@ -85,7 +85,7 @@ function DrawControl({ onAreaSelected, onAreaCleared, hasArea }) {
     const control = new L.Control.Draw({
       position: 'topright',
       draw: {
-        rectangle: { shapeOptions: { color: '#2563eb', weight: 2 } },
+        rectangle: false,
         polygon: { shapeOptions: { color: '#2563eb', weight: 2 }, allowIntersection: false },
         circle: { shapeOptions: { color: '#2563eb', weight: 2 } },
         marker: false,
@@ -100,13 +100,7 @@ function DrawControl({ onAreaSelected, onAreaCleared, hasArea }) {
       drawnItems.clearLayers();
       drawnItems.addLayer(e.layer);
 
-      if (e.layerType === 'rectangle') {
-        const b = e.layer.getBounds();
-        selectedRef.current?.({
-          type: 'bbox',
-          value: `${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`
-        });
-      } else if (e.layerType === 'polygon') {
+      if (e.layerType === 'polygon') {
         const latlngs = e.layer.getLatLngs()[0];
         const value = latlngs.map(p => `${p.lng},${p.lat}`).join(';');
         selectedRef.current?.({ type: 'polygon', value });
