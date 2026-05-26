@@ -1,6 +1,4 @@
-# 3. GitHub Actions Workflows
-
-V mapi .github/workflows/ smo ustvarili konfiguracijsko datoteko cicd.yml, ki natančno definira delovni tok.
+# P3 - 3. Projektna naloga_Azure
 ## 1. Docker Hub container registry in objava
 ### 1.1. Vzpostavitev DockerHub repozitorija za slike
 
@@ -35,7 +33,6 @@ docker build -t andrejnemanic27a/virtualestate-web-service:latest ./WebService
 docker build -t andrejnemanic27a/virtualestate-web-client:latest ./WebClient
 ```
 ![Lokalna gradnja Docker slik](./images/imagesDockerHub/image1.png)
-
 ### 1.4. Objava obeh slik na DockerHub
 Za objavo obeh slik na DockerHub sva uporabila ukaza:
 ```sh
@@ -53,29 +50,29 @@ Da sva se prepričala, da sta sliki objavljeni, sva šla pogledat na DockerHub, 
 
 ### 2.1. Konfiguracija varnostnih mehanizmov (GitHub Secrets)
 
-Zaradi varnostnih standardov in preprečevanja uhajanja občutljivih podatkov v javni repozitorij, smo vse kritične podatke shranili v repozitorij med skrivnosti (Settings -> Secrets and variables -> Actions).
+Zaradi varnostnih standardov in preprečevanja uhajanja občutljivih podatkov v javni repozitorij smo vse kritične podatke shranili v repozitorij med skrivnosti (Settings -> Secrets and variables -> Actions).
 
 Dodali smo 4 ključne spremenljivke:
 
 - DOCKERHUB_USERNAME: Uporabniško ime za dostop do Docker Hub računa (andrejnemanic27a).
 - DOCKERHUB_TOKEN: Varnostni žeton (Access Token) ustvarjen na Docker Hubu za avtentikacijo.
 - WEBHOOK_URL: Ciljni naslov strežnika, ki sprejema zahteve za namestitev (http://68.210.138.100:9000/hooks/deploy).
-- WEBHOOK_SECRET: Kriptografski žeton za avtentikacijo zahteve na strani strežnika, generiran lokalno s pomočjo Node.js kriptografske knjižnice: Bash
-```
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
+- WEBHOOK_SECRET: Naključno generiran niz
 
-### 2.2. Urejanje obstoječih delovnih tokov (Workflows)
+![Settings -> Secrets and variables -> Actions](./images/imagesDockerHub/2026-05-25_14-04.png)
+![Kreiranje DOCKERHUB_USERNAME](./images/imagesDockerHub/2026-05-25_13-58.png)
+![Kreiranje DOCKERHUB_TOKEN](./images/imagesDockerHub/2026-05-25_14-06.png)
+![Kreiranje WEBHOOK_URL](./images/imagesDockerHub/2026-05-25_14-08.png)
+![Kreiranje WEBHOOK_SECRET](./images/imagesDockerHub/2026-05-25_14-09.png)
+
+### 2.2. Urejanje obstoječih delovnih tokov (Workflows) in implementacija glavnega delovnega toka za namestitev (deploy.yml)
 
 Pred implementacijo novega cevovoda smo očistili in prilagodili obstoječe delovne tokove v mapi .github/workflows/:
 
 - Odstranitev privzetega koraka: Odstranili smo privzeto generiran delovni tok docker-image.yml (git rm .github/workflows/docker-image.yml), saj je zgolj gradil testno Alpine sliko brez možnosti potiskanja na oddaljeni register.
 - Ohranitev CI delovnega toka: Ohranili smo obstoječ delovni tok desktop-ci.yml, ki skrbi za neprekinjeno integracijo Kotlin namizne aplikacije (Java 17, Gradle build in preverjanje kode). Ta se še naprej sproža ločeno ob dogodkih push in pull_request.
 
-### 2.3. Implementacija glavnega delovnega toka za namestitev (deploy.yml)
-
 - Ustvarili smo novo datoteko .github/workflows/deploy.yml. Konfiguracija vsebuje dve zaporedni opravili (jobs), pri čemer je izvajanje drugega pogojevano z uspešnostjo prvega.
-YAML konfiguracija delovnega toka:
 ```yaml
 name: Build & Deploy
 
@@ -122,35 +119,37 @@ jobs:
             -d '{"commit":"${{ github.sha }}","ref":"${{ github.ref }}"}' \
             "${{ secrets.WEBHOOK_URL }}"
 ```
-### 2.4. Analiza izvajanja in trenutno stanje
+### 2.3. Analiza izvajanja in trenutno stanje!
 
 Po oddaji sprememb v repozitorij (git add, git commit, git push) in združitvi v vejo develop, se je delovni tok avtomatsko sprožil. Rezultati v zavihku Actions so bili naslednji:
 
 - build-and-push (USPEŠNO - ZELENO): Opravilo se je izvajalo med 1 in 3 minutami. Slike za WebService in WebClient so se uspešno zgradile, označile z značko latest in specifičnim SHA zavezave (github.sha) ter uspešno prenesle na Docker Hub.
 - trigger-deploy (NEUSPEŠNO - RDEČE): Kot je bilo pričakovano pred celotno nastavitvijo navideznega stroja (VM), je korak curl javil napako (timeout). Spletna kljukica na ciljnem strežniku še ni bila aktivna ali dostopna, kar potrjuje pravilnost logike needs: build-and-push – opravilo se je poskusilo izvesti šele po uspešnem prenosu slik.
 
-### 2.5. Predlogi za dodatne GitHub Actions delovne tokove v projektu
+
+
+### 2.4. Predlogi za dodatne GitHub Actions delovne tokove v projektu
 
 - Za dvig kakovosti kode in večjo stabilnost projekta VirtualEstate_Project bi bilo smiselno uvesti naslednje dodatne delovne tokove:
-### 2.6. Statistična analiza kode in Linterji (Code Quality)
+#### 2.4.1 Statistična analiza kode in Linterji (Code Quality)
 
 - Kaj: Implementacija orodij kot sta Ktlint (za Kotlin del) in ESLint (če WebClient uporablja JavaScript/TypeScript).
 
 - Kako/Kje: Ustvarili bi delovni tok .github/workflows/lint.yml, ki bi se sprožil ob vsakem pull_request na veji main in develop. Preverjal bi skladnost oblikovanja kode s standardi pred združevanjem.
 
-### 2.7. Avtomatizirano testiranje (Unit & Integration Tests)
+#### 2.4.2 Avtomatizirano testiranje (Unit & Integration Tests)
 
 - Kaj: Ločeno izvajanje celotne testne zbirke za backend storitve (WebService).
 
 - Kako/Kje: Delovni tok .github/workflows/backend-tests.yml. Ob vsakem potisku kode bi zagnal Docker-compose okolje s testno bazo podatkov in izvedel teste (npr. ./gradlew test ali ekvivalent v ogrodju), s čimer bi preprečili regresijo napak v produkciji.
 
-### 2.8. Varnostno pregledovanje slik (Security Vulnerability Scanning)
+#### 2.4.3 Varnostno pregledovanje slik (Security Vulnerability Scanning)
 
 - Kaj: Iskanje znanih varnostnih lukenj v Docker slikah in odvisnostih projekta.
 
 - Kako/Kje: Integracija orodja Trivy ali Snyk neposredno v deploy.yml ali kot samostojen tok .github/workflows/security.yml. Pregled bi javil napako, če bi Docker slika vsebovala kritične varnostne pomanjkljivosti (CVE).
 
-### 2.9. Avtomatsko generiranje izdaj (Release Management)
+#### 2.4.4 Avtomatsko generiranje izdaj (Release Management)
 
 - Kaj: Ko se koda združi v main vejo in se ustvari nova verzijska značka (git tag v1.0.0), sistem avtomatsko zbere dnevnik sprememb (changelog) in ustvari "GitHub Release".
 
@@ -158,4 +157,154 @@ Po oddaji sprememb v repozitorij (git add, git commit, git push) in združitvi v
 
 ## 3. Webhooks
 
-### 3.1 
+### 3.1. Implementacija Webhook strežnika in namestitvene skripte
+
+Za poslušanje Webhook klicev smo uporabili lahkotonosno in namensko orodje v jeziku Go, imenovano webhook (avtor Adnan Hajdarević), ki teče na vratih 9000.
+
+![Namestitev orodja Webhooks](./images/webhooks/Screenshot-2026-05-25-145501.png)
+
+- Konfiguracija kljukice (hooks.json)
+
+Definirali smo pravilo, ki posluša na poti /hooks/deploy, zahteva ujemanje varnostnega žetona v glavi zahteve in ob uspehu izvede skripto.
+
+
+```json
+[
+  {
+    "id": "deploy",
+    "execute-command": "/home/VirtualEstate/VirtualEstate_Project/deploy/deploy.sh",
+    "command-working-directory": "/home/VirtualEstate/VirtualEstate_Project",
+    "response-message": "Deploy triggered.\n",
+    "response-headers": [
+      { "name": "Content-Type", "value": "text/plain" }
+    ],
+    "trigger-rule": {
+      "match": {
+        "type": "value",
+        "value": "7bad201219361cc4fa29a4e229fa065a4b56c2c42e273eca6ef3afac1e20fad8",
+        "parameter": {
+          "source": "header",
+          "name": "X-Webhook-Token"
+        }
+      }
+    },
+    "pass-arguments-to-command": [
+      { "source": "payload", "name": "commit" },
+      { "source": "payload", "name": "ref" }
+    ]
+  }
+]
+```
+![hooks.json](./images/webhooks/Screenshot-2026-05-25-150021.png)
+- Sistemska storitev (webhook.service):
+
+Skripta v jeziku Bash poskrbi za zaustavitev starih vsebnikov, prenos najnovejših slik iz Docker Huba ter ponoven zagon aplikacij.
+```
+[Unit]
+Description=VirtualEstate deploy webhook listener
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=VirtualEstate
+Group=docker
+WorkingDirectory=/home/VirtualEstate/VirtualEstate_Project
+ExecStart=/usr/bin/webhook \
+    -hooks /home/VirtualEstate/VirtualEstate_Project/deploy/hooks.json \
+    -port 9000 \
+    -verbose
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```
+![webhook.service](./images/webhooks/Screenshot-2026-05-25-144712.png)
+- Namestitvena skripta (deploy.sh)
+
+```sh
+#!/bin/bash
+# Deploy skripta – sproži se preko webhook-a ob vsakem uspešnem GitHub Actions build-u
+# Argumenti (opcijski): $1 = commit SHA, $2 = git ref (npr. refs/heads/develop)
+
+set -euo pipefail
+
+COMMIT="${1:-unknown}"
+REF="${2:-unknown}"
+PROJECT_DIR="/home/VirtualEstate/VirtualEstate_Project"
+COMPOSE_FILE="docker-compose.yml"
+LOG_PREFIX="[deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)]"
+
+echo "$LOG_PREFIX Začetek (commit=$COMMIT ref=$REF)"
+
+cd "$PROJECT_DIR"
+
+# 1) Povleci najnovejšo verzijo izvorne kode (zaradi docker-compose.yml + deploy/ datotek)
+echo "$LOG_PREFIX git pull..."
+git pull --rebase --autostash
+
+# 2) Prenesi najnovejše docker slike iz Docker Hub
+echo "$LOG_PREFIX docker compose pull..."
+docker compose -f "$COMPOSE_FILE" pull
+
+# 3) Ustavi obstoječe kontejnerje in zaženi nove
+echo "$LOG_PREFIX docker compose up -d..."
+docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
+
+# 4) Pospravi neuporabljene image-e (sprosti disk)
+echo "$LOG_PREFIX docker image prune..."
+docker image prune -f
+
+echo "$LOG_PREFIX Deploy uspešno končan."
+```
+![deploy.sh](./images/webhooks/Screenshot-2026-05-25-144634.png)
+![inštalacija webhook](./images/webhooks/Screenshot-2026-05-25-145501.png)
+### 3.2. Varnostne luknje, pomisleki in rešitve
+
+
+Uporaba spletnih kljukic odpira strežnik zunanjim klicem, kar predstavlja resno varnostno tveganje, če sistem ni pravilno zaščiten.
+#### 1. DoS napadi (Denial of Service) s ponavljanjem zahtev
+
+    Problem: Napadalec bi lahko nenehno klical Webhook URL, kar bi povzročilo neskončno ponavljanje skripte deploy.sh (neprestano ustavljanje in zaganjanje Docker vsebnikov). To bi popolnoma sesulo razpoložljivost aplikacije.
+
+    Rešitev: Implementacija Rate Limiting-a (omejevanje števila zahtev) na ravni povratnega proksija (Nginx). Nginx dovoli npr. največ 1 klic na minuto na to pot.
+
+#### 2. Prisluškovanje in kraja podatkov (Man-in-the-Middle)
+
+    Problem: Ker klic poteka preko protokola HTTP, so vsi podatki (vključno s skrivnim žetonom) vidni v plain-text obliki. Napadalec lahko prestreže žeton in sam sproža namestitve.
+
+    Rešitev: Obvezna uporaba HTTPS (SSL/TLS). Promet smo šifrirali s pomočjo brezplačnega potrdila Let's Encrypt, s čimer so postali vsi podatki v glavi nečitljivi za vmesne opazovalce.
+
+#### 3. Neavtorizirani klici (Ponarejanje zahtev)
+
+    Problem: Če bi bila pot /hooks/deploy javno dostopna brez avtentikacije, bi jo lahko uganil in sprožil kdor koli.
+
+    Rešitev: Izvedli smo preverjanje žetona preko glave X-Webhook-Token. Še varnejša nadgradnja (ki jo podpira GitHub) je uporaba HMAC-SHA256 podpisa, kjer GitHub podpiše celotno telo zahteve s skrivnim ključem, naš strežnik pa preveri verodostojnost podpisa.
+
+#### 4. Previsoke pravice procesa (Privilege Escalation)
+
+    Problem: Webhook proces mora poganjati ukaze docker, kar pogosto zahteva root oziroma sudo pravice. Če ima napadalec možnost vbrizgavanja ukazov (Command Injection) preko payload-a, lahko prevzame nadzor nad celotnim strežnikom.
+
+    Rešitev: Uporabnik, ki poganja webhook storitev, nima root pravic, temveč je le del docker skupine. Skripta deploy.sh ima strogo določene statične ukaze in ne sprejema zunanjih argumentov iz telesa zahteve (uporablja fiksni tag :latest).
+
+### 3.3 Omrežna konfiguracija in požarni zid
+Da bi omogočili zunanjim storitvam (npr. GitHub Actions) dostop do poslušalca na vratih 9000, smo izvedli dvonivojsko odpiranje vrat:
+
+1. Lokalni požarni zid (UFW): Na operacijskem sistemu Ubuntu smo dodali pravilo sudo ufw allow 9000/tcp.
+
+![Pregled aktivnih pravil lokalnega požarnega zidu (UFW) z odprtimi vrati 9000/tcp](./images/webhooks/Screenshot-2026-05-25-150231.png)
+
+2. Oblačna infrastruktura (Azure NSG): V mrežni varnostni skupini (Network Security Group) za VirtualEstateMachine-nsg smo definirali vhodno pravilo (Inbound security rule) z imenom Allow-Webhook-9000, s prioriteto 321, ki dovoljuje TCP promet na ciljna vrata 9000 iz kateregakoli izvora.
+
+![Konfiguracija vhodnega varnostnega pravila (Inbound rule) za vrata 9000 v Azure portalu](./images/webhooks/Screenshot-2026-05-25-150442.png)
+
+### 3.4. Testiranje delovanja in validacija
+
+- Za preverjanje celotnega cevovoda smo najprej izvedli lokalni test s proženjem zahteve preko orodja curl neposredno na strežniku (Slika X). Iz logov storitve je razvidno, da je webhook pravilno prepoznal žeton, prejel argumente (commit in ref) ter uspešno izvedel Docker Compose posodobitev obeh vsebnikov (webservice in webclient).
+- Končni korak avtomatizacije je integracija z GitHub Actions (Slika Y), kjer se ob uspešno zaključenem gradbenem koraku avtomatsko sproži HTTP POST klic na zunanji IP naslov našega strežnika, s čimer je cikel neprekinjene namestitve v celoti sklenjen.
+
+![Logi webhook storitve, ki prikazujejo uspešno ulovljeno zahtevo, prejem parametrov in zagon posodobitve vsebnikov](./images/webhooks/Screenshot-2026-05-25-150645.png)
+![Uspešno izveden CI/CD cevovod znotraj platforme GitHub Actions](./images/webhooks/Screenshot-2026-05-25-151503.png)
