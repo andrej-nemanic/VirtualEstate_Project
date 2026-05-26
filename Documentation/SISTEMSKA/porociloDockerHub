@@ -124,9 +124,9 @@ jobs:
 Po oddaji sprememb v repozitorij (git add, git commit, git push) in združitvi v vejo develop, se je delovni tok avtomatsko sprožil. Rezultati v zavihku Actions so bili naslednji:
 
 - build-and-push (USPEŠNO - ZELENO): Opravilo se je izvajalo med 1 in 3 minutami. Slike za WebService in WebClient so se uspešno zgradile, označile z značko latest in specifičnim SHA zavezave (github.sha) ter uspešno prenesle na Docker Hub.
-- trigger-deploy (NEUSPEŠNO - RDEČE): Kot je bilo pričakovano pred celotno nastavitvijo navideznega stroja (VM), je korak curl javil napako (timeout). Spletna kljukica na ciljnem strežniku še ni bila aktivna ali dostopna, kar potrjuje pravilnost logike needs: build-and-push – opravilo se je poskusilo izvesti šele po uspešnem prenosu slik.
+- trigger-deploy (sprva NEUSPEŠNO, kasneje USPEŠNO): Pri prvem testu je curl javil napako (timeout), ker VM s webhook poslušalcem še ni bil postavljen. Po končni postavitvi storitve webhook na VM (glej poglavje 3) se opravilo izvede uspešno. Glej spodnji posnetek uspelega celotnega cevovoda.
 
-
+![Uspešno izveden CI/CD cevovod](./images/webhooks/Screenshot-2026-05-25-151503.png)
 
 ### 2.4. Predlogi za dodatne GitHub Actions delovne tokove v projektu
 
@@ -268,27 +268,27 @@ echo "$LOG_PREFIX Deploy uspešno končan."
 Uporaba spletnih kljukic odpira strežnik zunanjim klicem, kar predstavlja resno varnostno tveganje, če sistem ni pravilno zaščiten.
 #### 1. DoS napadi (Denial of Service) s ponavljanjem zahtev
 
-    Problem: Napadalec bi lahko nenehno klical Webhook URL, kar bi povzročilo neskončno ponavljanje skripte deploy.sh (neprestano ustavljanje in zaganjanje Docker vsebnikov). To bi popolnoma sesulo razpoložljivost aplikacije.
+- Problem: Napadalec bi lahko nenehno klical Webhook URL, kar bi povzročilo neskončno ponavljanje skripte deploy.sh (neprestano ustavljanje in zaganjanje Docker vsebnikov). To bi popolnoma sesulo razpoložljivost aplikacije.
 
-    Rešitev: Implementacija Rate Limiting-a (omejevanje števila zahtev) na ravni povratnega proksija (Nginx). Nginx dovoli npr. največ 1 klic na minuto na to pot.
+- Predlagana rešitev (načrtovan ukrep): Postavitev povratnega proksija (Nginx) pred webhook poslušalec in omejitev števila klicev na pot /hooks/deploy (npr. največ 1 klic na minuto).
 
 #### 2. Prisluškovanje in kraja podatkov (Man-in-the-Middle)
 
-    Problem: Ker klic poteka preko protokola HTTP, so vsi podatki (vključno s skrivnim žetonom) vidni v plain-text obliki. Napadalec lahko prestreže žeton in sam sproža namestitve.
+- Problem: Ker klic poteka preko protokola HTTP, so vsi podatki (vključno s skrivnim žetonom) vidni v plain-text obliki. Napadalec lahko prestreže žeton in sam sproža namestitve.
 
-    Rešitev: Obvezna uporaba HTTPS (SSL/TLS). Promet smo šifrirali s pomočjo brezplačnega potrdila Let's Encrypt, s čimer so postali vsi podatki v glavi nečitljivi za vmesne opazovalce.
+- Predlagana rešitev (načrtovan ukrep): Pridobitev domene in postavitev HTTPS (SSL/TLS) s brezplačnim potrdilom Let's Encrypt. Trenutno webhook teče preko HTTP-ja neposredno na IP naslovu, kar bo v naslednji iteraciji nadomeščeno s šifriranim prometom.
 
 #### 3. Neavtorizirani klici (Ponarejanje zahtev)
 
-    Problem: Če bi bila pot /hooks/deploy javno dostopna brez avtentikacije, bi jo lahko uganil in sprožil kdor koli.
+- Problem: Če bi bila pot /hooks/deploy javno dostopna brez avtentikacije, bi jo lahko uganil in sprožil kdor koli.
 
-    Rešitev: Izvedli smo preverjanje žetona preko glave X-Webhook-Token. Še varnejša nadgradnja (ki jo podpira GitHub) je uporaba HMAC-SHA256 podpisa, kjer GitHub podpiše celotno telo zahteve s skrivnim ključem, naš strežnik pa preveri verodostojnost podpisa.
+- Rešitev: Izvedli smo preverjanje žetona preko glave X-Webhook-Token. Še varnejša nadgradnja (ki jo podpira GitHub) je uporaba HMAC-SHA256 podpisa, kjer GitHub podpiše celotno telo zahteve s skrivnim ključem, naš strežnik pa preveri verodostojnost podpisa.
 
 #### 4. Previsoke pravice procesa (Privilege Escalation)
 
-    Problem: Webhook proces mora poganjati ukaze docker, kar pogosto zahteva root oziroma sudo pravice. Če ima napadalec možnost vbrizgavanja ukazov (Command Injection) preko payload-a, lahko prevzame nadzor nad celotnim strežnikom.
+- Problem: Webhook proces mora poganjati ukaze docker, kar pogosto zahteva root oziroma sudo pravice. Če ima napadalec možnost vbrizgavanja ukazov (Command I injection) preko payload-a, lahko prevzame nadzor nad celotnim strežnikom.
 
-    Rešitev: Uporabnik, ki poganja webhook storitev, nima root pravic, temveč je le del docker skupine. Skripta deploy.sh ima strogo določene statične ukaze in ne sprejema zunanjih argumentov iz telesa zahteve (uporablja fiksni tag :latest).
+- Rešitev: Uporabnik, ki poganja webhook storitev, nima root pravic, temveč je le del docker skupine. Skripta deploy.sh ima strogo določene statične ukaze in ne sprejema zunanjih argumentov iz telesa zahteve (uporablja fiksni tag :latest).
 
 ### 3.3 Omrežna konfiguracija in požarni zid
 Da bi omogočili zunanjim storitvam (npr. GitHub Actions) dostop do poslušalca na vratih 9000, smo izvedli dvonivojsko odpiranje vrat:
@@ -303,8 +303,8 @@ Da bi omogočili zunanjim storitvam (npr. GitHub Actions) dostop do poslušalca 
 
 ### 3.4. Testiranje delovanja in validacija
 
-- Za preverjanje celotnega cevovoda smo najprej izvedli lokalni test s proženjem zahteve preko orodja curl neposredno na strežniku (Slika X). Iz logov storitve je razvidno, da je webhook pravilno prepoznal žeton, prejel argumente (commit in ref) ter uspešno izvedel Docker Compose posodobitev obeh vsebnikov (webservice in webclient).
-- Končni korak avtomatizacije je integracija z GitHub Actions (Slika Y), kjer se ob uspešno zaključenem gradbenem koraku avtomatsko sproži HTTP POST klic na zunanji IP naslov našega strežnika, s čimer je cikel neprekinjene namestitve v celoti sklenjen.
+- Za preverjanje celotnega cevovoda smo najprej izvedli lokalni test s proženjem zahteve preko orodja curl neposredno na strežniku (glej prvo sliko spodaj). Iz logov storitve je razvidno, da je webhook pravilno prepoznal žeton, prejel argumente (commit in ref) ter uspešno izvedel Docker Compose posodobitev obeh vsebnikov (webservice in webclient).
+- Končni korak avtomatizacije je integracija z GitHub Actions (glej drugo sliko spodaj), kjer se ob uspešno zaključenem gradbenem koraku avtomatsko sproži HTTP POST klic na zunanji IP naslov našega strežnika, s čimer je cikel neprekinjene namestitve v celoti sklenjen.
 
 ![Logi webhook storitve, ki prikazujejo uspešno ulovljeno zahtevo, prejem parametrov in zagon posodobitve vsebnikov](./images/webhooks/Screenshot-2026-05-25-150645.png)
 ![Uspešno izveden CI/CD cevovod znotraj platforme GitHub Actions](./images/webhooks/Screenshot-2026-05-25-151503.png)
