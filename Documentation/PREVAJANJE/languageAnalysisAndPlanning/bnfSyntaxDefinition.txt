@@ -1,0 +1,65 @@
+<program> ::= "city" <string> "{" <city_body> "}"
+
+<city_body> ::= <city_stmt> | <city_stmt> <city_body>
+<city_stmt> ::= <let_decl> | <district_decl> | <street_decl> | <landmark_decl> | <comment>
+
+<let_decl> ::= "let" <identifier> "=" <expr> ";"
+
+<district_decl> ::= "district" <string> "{" <district_body> "}"
+<district_body> ::= <district_stmt> | <district_stmt> <district_body>
+<district_stmt> ::= "type" <identifier> ";"
+                  | "population" <expr> ";"
+                  | "area" <expr> ";"
+                  | "location" <expr> ";"
+                  | <set_stmt>
+                  | <boundary_decl>
+                  | <let_decl>
+                  | <comment>
+
+<street_decl> ::= "street" <string> "{" <street_body> "}"
+<street_body> ::= <street_stmt> | <street_stmt> <street_body>
+<street_stmt> ::= "type" <identifier> ";"
+                | "length" <expr> ";"
+                | <set_stmt>
+                | <boundary_decl>
+                | <let_decl>
+                | <comment>
+
+<landmark_decl> ::= "landmark" <string> "{" <landmark_body> "}"
+<landmark_body> ::= <landmark_stmt> | <landmark_stmt> <landmark_body>
+<landmark_stmt> ::= "type" <identifier> ";"
+                  | "location" <expr> ";"
+                  | "established" <expr> ";"
+                  | <set_stmt>
+                  | <boundary_decl>
+                  | <let_decl>
+                  | <comment>
+
+<boundary_decl> ::= "boundary" "{" <geo_commands> "}"
+<geo_commands> ::= <geo_command> | <geo_command> <geo_commands>
+<geo_command> ::= "line" "(" <expr> "," <expr> ")" ";"
+                | "box" "(" <expr> "," <expr> ")" ";"
+                | "bend" "(" <expr> "," <expr> "," <expr> ")" ";"
+                | <comment>
+
+<set_stmt> ::= "set" "(" <string> "," <set_val> ")" ";"
+<set_val> ::= <string> | <expr>
+
+<expr> ::= <term> | <expr> "+" <term> | <expr> "-" <term>
+<term> ::= <factor> | <term> "*" <factor> | <term> "/" <factor>
+<factor> ::= <number>
+           | <identifier>
+           | <point>
+           | "true"
+           | "false"
+           | "nil"
+           | "fst" "(" <expr> ")"
+           | "snd" "(" <expr> ")"
+           | "(" <expr> ")"
+
+<point> ::= "(" <expr> "," <expr> ")"
+
+<identifier> ::= [a-zA-Z][a-zA-Z0-9]*
+<string> ::= '"' [^"\\]* '"'
+<number> ::= [0-9]+ ("." [0-9]+)?
+<comment> ::= "//" [^\n]*
