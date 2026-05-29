@@ -1,0 +1,9 @@
+listings "T" {
+  let center = (15.6, 46.5);
+  let m2price = 2500;
+  estate "E" {
+    type hiša;
+    location (fst(center) + 0.01, snd(center));
+    price m2price * 65 - 100;
+  }
+}
