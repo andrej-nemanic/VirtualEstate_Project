@@ -1,65 +1,63 @@
-<program> ::= "city" <string> "{" <city_body> "}"
+Program ::= ListingsDecl eof;
 
-<city_body> ::= <city_stmt> | <city_stmt> <city_body>
-<city_stmt> ::= <let_decl> | <district_decl> | <street_decl> | <landmark_decl> | <comment>
+ListingsDecl ::= listings string lbrace ListingsBody rbrace;
+ListingsBody ::= ListingsStmt ListingsBody | ε;
+ListingsStmt ::= LetDecl | EstateDecl;
 
-<let_decl> ::= "let" <identifier> "=" <expr> ";"
+EstateDecl ::= estate string lbrace EstateBody rbrace;
+EstateBody ::= EstateStmt EstateBody | ε;
+EstateStmt ::= type identifier semicolon
+             | offerType identifier semicolon
+             | location PointExpr semicolon
+             | price Expr semicolon
+             | size Expr semicolon
+             | region string semicolon
+             | neighborhood string semicolon
+             | description string semicolon
+             | source string semicolon
+             | SetStmt
+             | ParcelDecl
+             | LetDecl;
 
-<district_decl> ::= "district" <string> "{" <district_body> "}"
-<district_body> ::= <district_stmt> | <district_stmt> <district_body>
-<district_stmt> ::= "type" <identifier> ";"
-                  | "population" <expr> ";"
-                  | "area" <expr> ";"
-                  | "location" <expr> ";"
-                  | <set_stmt>
-                  | <boundary_decl>
-                  | <let_decl>
-                  | <comment>
+LetDecl ::= let identifier assign LetValue semicolon;
+LetValue ::= Point | Expr;
 
-<street_decl> ::= "street" <string> "{" <street_body> "}"
-<street_body> ::= <street_stmt> | <street_stmt> <street_body>
-<street_stmt> ::= "type" <identifier> ";"
-                | "length" <expr> ";"
-                | <set_stmt>
-                | <boundary_decl>
-                | <let_decl>
-                | <comment>
+SetStmt ::= set lparen string comma SetValue rparen semicolon;
+SetValue ::= Point | Expr;
 
-<landmark_decl> ::= "landmark" <string> "{" <landmark_body> "}"
-<landmark_body> ::= <landmark_stmt> | <landmark_stmt> <landmark_body>
-<landmark_stmt> ::= "type" <identifier> ";"
-                  | "location" <expr> ";"
-                  | "established" <expr> ";"
-                  | <set_stmt>
-                  | <boundary_decl>
-                  | <let_decl>
-                  | <comment>
+ParcelDecl ::= parcel lbrace ParcelBody rbrace;
+ParcelBody ::= GeoCommand GeoCommandsTail | ε;
+GeoCommandsTail ::= semicolon GeoCommand GeoCommandsTail
+                  | semicolon
+                  | ε;
 
-<boundary_decl> ::= "boundary" "{" <geo_commands> "}"
-<geo_commands> ::= <geo_command> | <geo_command> <geo_commands>
-<geo_command> ::= "line" "(" <expr> "," <expr> ")" ";"
-                | "box" "(" <expr> "," <expr> ")" ";"
-                | "bend" "(" <expr> "," <expr> "," <expr> ")" ";"
-                | <comment>
+GeoCommand ::= line lparen PointExpr comma PointExpr rparen
+             | box lparen PointExpr comma PointExpr rparen
+             | bend lparen PointExpr comma PointExpr comma Expr rparen;
 
-<set_stmt> ::= "set" "(" <string> "," <set_val> ")" ";"
-<set_val> ::= <string> | <expr>
+PointExpr ::= Point | identifier;
+Point ::= lparen Expr comma Expr rparen;
 
-<expr> ::= <term> | <expr> "+" <term> | <expr> "-" <term>
-<term> ::= <factor> | <term> "*" <factor> | <term> "/" <factor>
-<factor> ::= <number>
-           | <identifier>
-           | <point>
-           | "true"
-           | "false"
-           | "nil"
-           | "fst" "(" <expr> ")"
-           | "snd" "(" <expr> ")"
-           | "(" <expr> ")"
+Expr ::= Additive;
 
-<point> ::= "(" <expr> "," <expr> ")"
+Additive ::= Multiplicative Additive';
+Additive' ::= plus Multiplicative Additive'
+            | minus Multiplicative Additive'
+            | ε;
 
-<identifier> ::= [a-zA-Z][a-zA-Z0-9]*
-<string> ::= '"' [^"\\]* '"'
-<number> ::= [0-9]+ ("." [0-9]+)?
-<comment> ::= "//" [^\n]*
+Multiplicative ::= Unary Multiplicative';
+Multiplicative' ::= times Unary Multiplicative'
+                  | divide Unary Multiplicative'
+                  | ε;
+
+Unary ::= minus Primary | plus Primary | Primary;
+
+Primary ::= number
+          | string
+          | identifier
+          | true
+          | false
+          | nil
+          | fst lparen Expr rparen
+          | snd lparen Expr rparen
+          | lparen Expr rparen;
