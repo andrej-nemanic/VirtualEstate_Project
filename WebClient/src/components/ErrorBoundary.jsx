@@ -22,7 +22,7 @@ export default class ErrorBoundary extends Component {
       <div className="container">
         <div className="card" style={{ padding: 40, textAlign: 'center' }}>
           <h1 style={{ marginTop: 0 }}>Nekaj je šlo narobe.</h1>
-          <p style={{ color: '#6b7280' }}>
+          <p className="muted">
             {this.state.error?.message || 'Nepričakovana napaka v vmesniku.'}
           </p>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 16 }}>

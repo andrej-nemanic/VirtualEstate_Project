@@ -42,19 +42,18 @@ export default function Register() {
     }
     const { confirmPassword, ...payload } = form;
     const res = await register({ ...payload, email: payload.email.trim().toLowerCase() });
-    if (res.ok) navigate('/dashboard');
+    if (res.ok) navigate('/', { replace: true });
     else setError(res.message);
   };
 
   return (
     <div className="auth-page">
       <h1>Registracija</h1>
-      <p className="auth-subtitle">Ustvari nov račun — traja manj kot minuto.</p>
       <form onSubmit={handleSubmit} noValidate>
         {error && <div className="alert alert-error">{error}</div>}
         <div className="form-group">
           <label>Ime</label>
-          <input name="name" value={form.name} onChange={handleChange} placeholder="Janez Novak" required autoFocus />
+          <input name="name" value={form.name} onChange={handleChange} placeholder="Ime Priimek" required autoFocus />
           {fieldErrors.name && <div className="field-error">{fieldErrors.name}</div>}
         </div>
         <div className="form-group">

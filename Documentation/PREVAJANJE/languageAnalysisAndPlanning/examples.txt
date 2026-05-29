@@ -1,0 +1,115 @@
+city "Novo Mesto" {
+  let center_x = 15.1651;
+  let center_y = 45.8021;
+  let center = (center_x, center_y);
+}
+city "Ljubljana" {
+  district "Šiška" {
+    type stanovanjska;
+    population 35000;
+    area 12.5;
+  }
+}
+city "Maribor" {
+  street "Partizanska cesta" {
+    type glavna;
+    length 1500;
+    boundary {
+      line ((15.645, 46.557), (15.655, 46.559));
+      line ((15.655, 46.559), (15.665, 46.561));
+    }
+  }
+}
+city "Celje" {
+  landmark "Celjski grad" {
+    type zgodovinska;
+    established 1322;
+    set("vstopnina", "odrasli-7EUR");
+    set("odprto", true);
+    boundary {
+      box ((15.271, 46.219), (15.275, 46.216));
+    }
+  }
+}
+city "Kranj" {
+  let izhodisce = (14.355, 46.239);
+  
+  landmark "Prešernov gaj" {
+    type park;
+    location (fst(izhodisce) + 0.005, snd(izhodisce) - 0.002);
+  }
+}
+city "Koper" {
+  district "Semedela" {
+    type obalna;
+    boundary {
+      line ((13.712, 45.535), (13.718, 45.539));
+      // Krivulja, ki sledi obalni črti
+      bend ((13.718, 45.539), (13.710, 45.545), 45);
+      line ((13.710, 45.545), (13.712, 45.535));
+    }
+  }
+}
+city "Murska Sobota" {
+  let skupna_povrsina = 15;
+  let povprecna_gostota = 120; // prebivalcev na km2
+
+  district "Sever" {
+    type stanovanjska;
+    area skupna_povrsina / 3;
+    population povprecna_gostota * (skupna_povrsina / 3);
+  }
+}
+city "Velenje" {
+  district "Gorica" {
+    let lokalni_faktor = 1.2;
+    type stanovanjska;
+    population 4000 * lokalni_faktor;
+  }
+  district "Pesje" {
+    type industrijska;
+    population 500; // lokalni_faktor tukaj ni viden
+  }
+}
+city "Ptuj" {
+  landmark "Arheološko najdišče" {
+    type neznano;
+    established -300; // Leto pred našim štetjem
+    location (-15.123, -46.456); // Test negativnih koordinat
+    set("upravitelj", nil);
+  }
+}
+city "Maribor" {
+  let center_tocka = (15.6467, 46.5547);
+  let proracun_milijoni = 45.5;
+
+  district "Center" {
+    type poslovna;
+    population 6500;
+    area 2.4;
+    location center_tocka;
+    set("is_pedestrian_zone", true);
+    boundary {
+      box ((15.641, 46.559), (15.652, 46.551));
+    }
+  }
+
+  street "Koroška cesta" {
+    type glavna;
+    length 2200;
+    boundary {
+      line ((fst(center_tocka) - 0.02, snd(center_tocka)), center_tocka);
+    }
+  }
+
+  landmark "Mestni park" {
+    type park;
+    established 1872;
+    set("stevilo_dreves", 1420);
+    boundary {
+      line ((15.645, 46.561), (15.650, 46.561));
+      bend ((15.650, 46.561), (15.648, 46.566), 15);
+      line ((15.648, 46.566), (15.645, 46.561));
+    }
+  }
+}

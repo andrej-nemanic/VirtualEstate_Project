@@ -24,7 +24,7 @@ export default function Navbar() {
         <div className="navbar-top">
           <NavLink to="/" className="brand" onClick={() => setOpen(false)}>
             <span className="brand-mark">VE</span>
-            <span>Virtual Estate</span>
+            <span>VirtualEstate</span>
           </NavLink>
           <button
             className="nav-toggle"
@@ -45,7 +45,7 @@ export default function Navbar() {
         </div>
 
         <div className="links">
-          <NavLink to="/" end>Nadzorna plošča</NavLink>
+          <NavLink to="/" end>Nepremičnine</NavLink>
           {user?.isAdmin && <NavLink to="/admin">Admin</NavLink>}
         </div>
 
