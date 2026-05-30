@@ -7,11 +7,10 @@ import src.lexicalAnalyser.tokenFormatNames
 import src.semantics.Validator
 import src.syntaxAnalyser.AstPrinter
 import src.syntaxAnalyser.Parser
+import src.syntaxAnalyser.SourcePrinter
 import java.io.File
 
 fun main(args: Array<String>) {
-    val printTokens = args.contains("--tokens")
-    val printAst = args.contains("--ast")
     val fileArg = args.firstOrNull { !it.startsWith("--") }
 
     val source: String = if (fileArg != null) {
@@ -25,34 +24,41 @@ fun main(args: Array<String>) {
         SAMPLE
     }
 
-    val tokens = Lexer(source).scanTokens()
+    val outDir = File("output")
+    outDir.mkdirs()
 
-    if (printTokens) {
-        System.err.println("--- Tokens ---")
-        tokens.filter { it.type != TokenType.EOF }.forEach { token ->
+    val tokens = Lexer(source).scanTokens()
+    val tokenText = tokens
+        .filter { it.type != TokenType.EOF }
+        .joinToString("\n") { token ->
             val name = tokenFormatNames[token.type] ?: token.type.name.lowercase()
             val text = if (token.type == TokenType.STRING) token.literal as String else token.lexeme
-            System.err.println("$name(\"$text\")")
+            "$name(\"$text\")"
         }
-        System.err.println("--- GeoJSON ---")
-    }
+    File(outDir, "tokens.txt").writeText(tokenText)
 
     try {
         val program = Parser(tokens).parse()
 
-        if (printAst) {
-            System.err.println("--- AST ---")
-            System.err.println(AstPrinter.print(program))
-        }
+        File(outDir, "ast.txt").writeText(AstPrinter.print(program))
+        File(outDir, "pretty.txt").writeText(SourcePrinter.pretty(program))
+        File(outDir, "minified.txt").writeText(SourcePrinter.minify(program))
 
         val issues = Validator().validate(program)
-        if (issues.isNotEmpty()) {
-            System.err.println("--- Validation ---")
-            issues.forEach { System.err.println(it) }
-        }
+        val validationText =
+            if (issues.isEmpty()) "No validation issues."
+            else issues.joinToString("\n") { it.toString() }
+        File(outDir, "validation.txt").writeText(validationText)
 
-        val geoJson = GeoJsonGenerator().generate(program)
-        println(geoJson)
+        File(outDir, "output.geojson").writeText(GeoJsonGenerator().generate(program))
+
+        println("Output written to ${outDir.absolutePath}:")
+        println("  tokens.txt")
+        println("  ast.txt")
+        println("  pretty.txt")
+        println("  minified.txt")
+        println("  validation.txt")
+        println("  output.geojson")
     } catch (e: Exception) {
         System.err.println(e.message)
     }
