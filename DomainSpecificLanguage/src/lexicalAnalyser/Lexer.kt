@@ -1,164 +1,222 @@
 package src.lexicalAnalyser
 
 class Lexer(private val source: String) {
-    private val tokens = mutableListOf<Token>()
-    private var start = 0
-    private var current = 0
+    private var cursor = 0
     private var line = 1
     private var column = 1
+    private val tokens = mutableListOf<Token>()
 
-    // Preslikava ključnih besed iz BNF in realnih primerov
-    private val keywords = mapOf(
-        "listings" to TokenType.LISTINGS,
-        "city" to TokenType.LISTINGS,           // primer -> BNF
-        "estate" to TokenType.ESTATE,
-        "district" to TokenType.ESTATE,         // primer -> BNF
-        "street" to TokenType.ESTATE,           // primer -> BNF
-        "landmark" to TokenType.ESTATE,         // primer -> BNF
-        "type" to TokenType.TYPE,
-        "offerType" to TokenType.OFFER_TYPE,
-        "established" to TokenType.OFFER_TYPE,  // primer -> BNF
-        "location" to TokenType.LOCATION,
-        "price" to TokenType.PRICE,
-        "size" to TokenType.SIZE,
-        "area" to TokenType.SIZE,               // primer -> BNF
-        "length" to TokenType.SIZE,             // primer -> BNF
-        "population" to TokenType.SIZE,         // primer -> BNF (obravnavano kot številski izraz)
-        "region" to TokenType.REGION,
-        "neighborhood" to TokenType.NEIGHBORHOOD,
-        "description" to TokenType.DESCRIPTION,
-        "source" to TokenType.SOURCE,
-        "let" to TokenType.LET,
-        "set" to TokenType.SET,
-        "parcel" to TokenType.PARCEL,
-        "boundary" to TokenType.PARCEL,         // primer -> BNF
-        "line" to TokenType.LINE,
-        "box" to TokenType.BOX,
-        "bend" to TokenType.BEND,
-        "fst" to TokenType.FST,
-        "snd" to TokenType.SND,
-        "true" to TokenType.TRUE,
-        "false" to TokenType.FALSE,
-        "nil" to TokenType.NIL
-    )
+    companion object {
+        private const val TABLE_WIDTH = 0x180
+        private const val NO_EDGE = -1
 
-    fun scanTokens(): List<Token> {
-        while (!isAtEnd()) {
-            start = current
-            scanToken()
+        private val automata = ArrayList<IntArray>()
+        private val finite = ArrayList<TokenType?>()
+
+        private val START: Int
+        private val IDENT: Int
+        private val identChars: IntArray
+
+        private fun newState(): Int {
+            automata.add(IntArray(TABLE_WIDTH) { NO_EDGE })
+            finite.add(null)
+            return automata.size - 1
         }
-        tokens.add(Token(TokenType.EOF, "", null, line, column))
-        return tokens
-    }
 
-    private fun scanToken() {
-        val c = advance()
-        when (c) {
-            '{' -> addToken(TokenType.LBRACE)
-            '}' -> addToken(TokenType.RBRACE)
-            '(' -> addToken(TokenType.LPAREN)
-            ')' -> addToken(TokenType.RPAREN)
-            ';' -> addToken(TokenType.SEMICOLON)
-            ',' -> addToken(TokenType.COMMA)
-            '=' -> addToken(TokenType.ASSIGN)
-            '+' -> addToken(TokenType.PLUS)
-            '-' -> addToken(TokenType.MINUS)
-            '*' -> addToken(TokenType.TIMES)
-            '/' -> {
-                if (match('/')) {
-                    // Komentar traja do konca vrstice
-                    while (peek() != '\n' && !isAtEnd()) advance()
+        private fun isLetterCode(c: Int): Boolean = when {
+            c in 'a'.code..'z'.code -> true
+            c in 'A'.code..'Z'.code -> true
+            c == 0xD7 || c == 0xF7 -> false
+            c in 0xC0..0x17F -> true
+            else -> false
+        }
+
+        private fun addIdentFallback(state: Int) {
+            for (c in identChars) automata[state][c] = IDENT
+        }
+
+        private fun addKeyword(word: String, type: TokenType) {
+            var state = START
+            for (ch in word) {
+                val code = ch.code
+                val next = automata[state][code]
+                state = if (next == NO_EDGE || next == IDENT) {
+                    val node = newState()
+                    finite[node] = TokenType.IDENTIFIER
+                    addIdentFallback(node)
+                    automata[state][code] = node
+                    node
                 } else {
-                    addToken(TokenType.DIVIDE)
+                    next
                 }
             }
-            ' ', '\r', '\t' -> { /* Preskoči prazne znake */ }
-            '\n' -> {
-                line++
-                column = 1
+            finite[state] = type
+        }
+
+        init {
+            identChars = (0 until TABLE_WIDTH).filter {
+                isLetterCode(it) || it in '0'.code..'9'.code || it == '_'.code
+            }.toIntArray()
+
+            START = newState()
+            IDENT = newState()
+
+            for (c in 0 until TABLE_WIDTH) {
+                if (isLetterCode(c) || c == '_'.code) automata[START][c] = IDENT
             }
-            '"' -> stringLiteral()
-            else -> {
-                if (c.isDigit()) {
-                    numberLiteral()
-                } else if (c.isLetter() || c == '_') {
-                    identifierOrKeyword()
-                } else {
-                    throw RuntimeException("Leksikalna napaka: Nepričakovan znak '$c' na vrstici $line, stolpec $column")
-                }
+            finite[IDENT] = TokenType.IDENTIFIER
+            addIdentFallback(IDENT)
+
+            addKeyword("listings", TokenType.LISTINGS)
+            addKeyword("estate", TokenType.ESTATE)
+            addKeyword("parcel", TokenType.PARCEL)
+            addKeyword("let", TokenType.LET)
+            addKeyword("type", TokenType.TYPE)
+            addKeyword("offerType", TokenType.OFFER_TYPE)
+            addKeyword("location", TokenType.LOCATION)
+            addKeyword("price", TokenType.PRICE)
+            addKeyword("size", TokenType.SIZE)
+            addKeyword("region", TokenType.REGION)
+            addKeyword("neighborhood", TokenType.NEIGHBORHOOD)
+            addKeyword("description", TokenType.DESCRIPTION)
+            addKeyword("source", TokenType.SOURCE)
+            addKeyword("set", TokenType.SET)
+            addKeyword("line", TokenType.LINE)
+            addKeyword("box", TokenType.BOX)
+            addKeyword("bend", TokenType.BEND)
+            addKeyword("fst", TokenType.FST)
+            addKeyword("snd", TokenType.SND)
+            addKeyword("true", TokenType.TRUE)
+            addKeyword("false", TokenType.FALSE)
+            addKeyword("nil", TokenType.NIL)
+
+            val intState = newState()
+            val dotState = newState()
+            val fracState = newState()
+            for (c in '0'.code..'9'.code) {
+                automata[START][c] = intState
+                automata[intState][c] = intState
+                automata[dotState][c] = fracState
+                automata[fracState][c] = fracState
             }
-        }
-    }
+            automata[intState]['.'.code] = dotState
+            finite[intState] = TokenType.NUMBER
+            finite[fracState] = TokenType.NUMBER
 
-    private fun identifierOrKeyword() {
-        while (peek().isLetterOrDigit() || peek() == '_') advance()
-        val text = source.substring(start, current)
-        val type = keywords[text] ?: TokenType.IDENTIFIER
-        addToken(type)
-    }
-
-    private fun numberLiteral() {
-        while (peek().isDigit()) advance()
-
-        // Preveri decimalni del
-        if (peek() == '.' && peekNext().isDigit()) {
-            advance() // Porabi piko "."
-            while (peek().isDigit()) advance()
-        }
-
-        val text = source.substring(start, current)
-        addToken(TokenType.NUMBER, text.toDouble())
-    }
-
-    private fun stringLiteral() {
-        while (peek() != '"' && !isAtEnd()) {
-            if (peek() == '\n') {
-                line++
-                column = 1
+            val strOpen = newState()
+            val strClose = newState()
+            automata[START]['"'.code] = strOpen
+            for (c in 0 until TABLE_WIDTH) {
+                if (c != '"'.code && c != '\n'.code && c != '\r'.code)
+                    automata[strOpen][c] = strOpen
             }
-            advance()
+            automata[strOpen]['"'.code] = strClose
+            finite[strClose] = TokenType.STRING
+
+            fun single(ch: Char, type: TokenType) {
+                val s = newState()
+                automata[START][ch.code] = s
+                finite[s] = type
+            }
+            single('{', TokenType.LBRACE)
+            single('}', TokenType.RBRACE)
+            single('(', TokenType.LPAREN)
+            single(')', TokenType.RPAREN)
+            single(',', TokenType.COMMA)
+            single(';', TokenType.SEMICOLON)
+            single('=', TokenType.ASSIGN)
+            single('+', TokenType.PLUS)
+            single('-', TokenType.MINUS)
+            single('*', TokenType.TIMES)
+
+            val divideState = newState()
+            val commentState = newState()
+            automata[START]['/'.code] = divideState
+            finite[divideState] = TokenType.DIVIDE
+            automata[divideState]['/'.code] = commentState
+            for (c in 0 until TABLE_WIDTH) {
+                if (c != '\n'.code && c != '\r'.code) automata[commentState][c] = commentState
+            }
+            finite[commentState] = TokenType.IGNORE
+
+            val wsState = newState()
+            for (ws in intArrayOf(' '.code, '\t'.code, '\n'.code, '\r'.code)) {
+                automata[START][ws] = wsState
+                automata[wsState][ws] = wsState
+            }
+            finite[wsState] = TokenType.IGNORE
         }
-
-        if (isAtEnd()) {
-            throw RuntimeException("Leksikalna napaka: Nedokončan niz na vrstici $line")
-        }
-
-        advance() // Zaključni narekovaj "
-
-        // Odstranimo narekovaje iz shranjene vrednosti
-        val value = source.substring(start + 1, current - 1)
-        addToken(TokenType.STRING, value)
-    }
-
-    // Pomožne funkcije za pomikanje po vnosu
-    private fun match(expected: Char): Boolean {
-        if (isAtEnd()) return false
-        if (source[current] != expected) return false
-        current++
-        column++
-        return true
-    }
-
-    private fun peek(): Char = if (isAtEnd()) '\u0000' else source[current]
-
-    private fun peekNext(): Char {
-        if (current + 1 >= source.length) return '\u0000'
-        return source[current + 1]
     }
 
     private fun advance(): Char {
-        val c = source[current++]
-        column++
+        val c = source[cursor++]
+        if (c == '\n') {
+            line++
+            column = 1
+        } else {
+            column++
+        }
         return c
     }
 
-    private fun isAtEnd(): Boolean = current >= source.length
+    private fun nextToken(): Token {
+        while (true) {
+            var state = START
+            val sb = StringBuilder()
+            val tokLine = line
+            val tokCol = column
 
-    private fun addToken(type: TokenType) = addToken(type, null)
+            while (true) {
+                val p = if (cursor < source.length) source[cursor].code else -1
+                val next = if (p in 0 until TABLE_WIDTH) automata[state][p] else NO_EDGE
 
-    private fun addToken(type: TokenType, literal: Any?) {
-        val text = source.substring(start, current)
-        val tokenColumn = column - (current - start)
-        tokens.add(Token(type, text, literal, line, tokenColumn))
+                if (next != NO_EDGE) {
+                    state = next
+                    sb.append(advance())
+                    continue
+                }
+
+                val type = finite[state]
+                when {
+                    type == TokenType.IGNORE -> { }
+                    type != null -> return makeToken(type, sb.toString(), tokLine, tokCol)
+                    state == START && cursor >= source.length ->
+                        return Token(TokenType.EOF, "", null, tokLine, tokCol)
+                    else -> {
+                        if (cursor < source.length) {
+                            val bad = source[cursor]
+                            System.err.println(
+                                "Lexical error: unexpected character '$bad' (code ${bad.code}) " +
+                                    "at line $line, column $column"
+                            )
+                            advance()
+                        } else {
+                            System.err.println(
+                                "Lexical error: unterminated token '$sb' at line $tokLine, column $tokCol"
+                            )
+                        }
+                    }
+                }
+                break
+            }
+        }
+    }
+
+    private fun makeToken(type: TokenType, lexeme: String, l: Int, c: Int): Token {
+        val literal: Any? = when (type) {
+            TokenType.NUMBER -> lexeme.toDouble()
+            TokenType.STRING -> lexeme.substring(1, lexeme.length - 1)
+            else -> null
+        }
+        return Token(type, lexeme, literal, l, c)
+    }
+
+    fun scanTokens(): List<Token> {
+        while (true) {
+            val t = nextToken()
+            tokens.add(t)
+            if (t.type == TokenType.EOF) break
+        }
+        return tokens
     }
 }

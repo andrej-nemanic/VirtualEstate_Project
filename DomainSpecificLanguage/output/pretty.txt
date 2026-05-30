@@ -1,12 +1,10 @@
 listings "Maribor" {
   let center = (15.6467, 46.5547);
   let m2price = 2500;
-
   estate "Garsonjera Center" {
     type stanovanje;
-    location (15.60, 46.55);
+    location (15.6, 46.55);
   }
-
   estate "Stanovanje Center" {
     type stanovanje;
     offerType prodaja;
@@ -19,13 +17,12 @@ listings "Maribor" {
     source "nepremicnine.si";
     set("ogrevanje", "plin");
     parcel {
-      line ((15.640, 46.550), (15.645, 46.550));
-      line ((15.645, 46.550), (15.645, 46.554));
-      bend ((15.645, 46.554), (15.640, 46.554), 20);
-      line ((15.640, 46.554), (15.640, 46.550))
+      line((15.64, 46.55), (15.645, 46.55));
+      line((15.645, 46.55), (15.645, 46.554));
+      bend((15.645, 46.554), (15.64, 46.554), 20);
+      line((15.64, 46.554), (15.64, 46.55));
     }
   }
-
   estate "Hiša Tabor" {
     type hiša;
     offerType najem;
@@ -36,20 +33,18 @@ listings "Maribor" {
     neighborhood "Tabor";
     set("zgrajeno", 1998);
     parcel {
-      box ((15.700, 46.556), (15.706, 46.550))
+      box((15.7, 46.556), (15.706, 46.55));
     }
   }
-
   estate "Parcela Pobrežje" {
     type posest;
     location (15.752, 46.553);
     parcel {
-      line ((15.750, 46.550), (15.755, 46.550));
-      line ((15.755, 46.550), (15.752, 46.555));
-      line ((15.752, 46.555), (15.750, 46.550))
+      line((15.75, 46.55), (15.755, 46.55));
+      line((15.755, 46.55), (15.752, 46.555));
+      line((15.752, 46.555), (15.75, 46.55));
     }
   }
-
   estate "Stanovanje Studenci" {
     let area = 80;
     let unit = 1800;
@@ -59,13 +54,11 @@ listings "Maribor" {
     size area;
     price unit * area + 5000 - 2000;
   }
-
   estate "Zemljišče Južni rob" {
     type posest;
     location (-15.123, -46.456);
     description "Preizkus negativnih koordinat";
   }
-
   estate "Hiša ob Dravi" {
     type hiša;
     location (15.62, 46.57);
@@ -73,7 +66,6 @@ listings "Maribor" {
     neighborhood "Pobrežje";
     description "Hiša ob reki Dravi";
   }
-
   estate "Vila Kalvarija" {
     type stanovanje;
     location (15.63, 46.58);
@@ -84,23 +76,17 @@ listings "Maribor" {
     set("upravnik", nil);
     set("vogal", (15.6, 46.5));
   }
-
   estate "Posest Pekre" {
     type hiša;
     location (15.64, 46.59);
     size 10 + 2 * 3;
     price (100 + 50) * 2 - 10 / 5;
   }
-
-  estate "Neveljaven oglas" {
+  estate "Posest Maribor" {
     type posest;
     offerType najem;
-    location (15.80, 46.55);
-    size -5;
-    price 0;
-    parcel {
-      line ((15.800, 46.550), (15.805, 46.550));
-      line ((15.805, 46.550), (15.805, 46.555))
-    }
+    location (15.8, 46.55);
+    size 5;
+    price 100000;
   }
 }

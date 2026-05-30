@@ -92,15 +92,11 @@ listings "Maribor" {
     price (100 + 50) * 2 - 10 / 5;
   }
 
-  estate "Neveljaven oglas" {
+  estate "Posest Maribor" {
     type posest;
     offerType najem;
     location (15.80, 46.55);
-    size -5;
-    price 0;
-    parcel {
-      line ((15.800, 46.550), (15.805, 46.550));
-      line ((15.805, 46.550), (15.805, 46.555))
-    }
+    size 5;
+    price 100000;
   }
 }

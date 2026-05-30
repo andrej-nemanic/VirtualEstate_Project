@@ -1,0 +1,79 @@
+Program
+  Listings "Maribor"
+    Let center = (15.6467, 46.5547)
+    Let m2price = 2500
+    Estate "Garsonjera Center"
+      Type stanovanje
+      Location (15.6, 46.55)
+    Estate "Stanovanje Center"
+      Type stanovanje
+      OfferType prodaja
+      Location center
+      Size 65
+      Price (m2price * 65)
+      Region "Podravska"
+      Neighborhood "Center"
+      Description "Stanovanje v mestnem jedru"
+      Source "nepremicnine.si"
+      Set ogrevanje = "plin"
+      Parcel
+        Line (15.64, 46.55) -> (15.645, 46.55)
+        Line (15.645, 46.55) -> (15.645, 46.554)
+        Bend (15.645, 46.554) -> (15.64, 46.554) angle 20
+        Line (15.64, 46.554) -> (15.64, 46.55)
+    Estate "Hiša Tabor"
+      Type hiša
+      OfferType najem
+      Location ((fst(center) + 0.01), (snd(center) - 0.01))
+      Size 120
+      Price ((m2price * 120) - 5000)
+      Region "Podravska"
+      Neighborhood "Tabor"
+      Set zgrajeno = 1998
+      Parcel
+        Box (15.7, 46.556) -> (15.706, 46.55)
+    Estate "Parcela Pobrežje"
+      Type posest
+      Location (15.752, 46.553)
+      Parcel
+        Line (15.75, 46.55) -> (15.755, 46.55)
+        Line (15.755, 46.55) -> (15.752, 46.555)
+        Line (15.752, 46.555) -> (15.75, 46.55)
+    Estate "Stanovanje Studenci"
+      Let area = 80
+      Let unit = 1800
+      Type stanovanje
+      OfferType prodaja
+      Location (15.61, 46.56)
+      Size area
+      Price (((unit * area) + 5000) - 2000)
+    Estate "Zemljišče Južni rob"
+      Type posest
+      Location ((-15.123), (-46.456))
+      Description "Preizkus negativnih koordinat"
+    Estate "Hiša ob Dravi"
+      Type hiša
+      Location (15.62, 46.57)
+      Region "Štajerska"
+      Neighborhood "Pobrežje"
+      Description "Hiša ob reki Dravi"
+    Estate "Vila Kalvarija"
+      Type stanovanje
+      Location (15.63, 46.58)
+      Set ogrevanje = "toplotna črpalka"
+      Set nadstropja = 2
+      Set cena_na_kvadrat = 3.14
+      Set oddano = true
+      Set upravnik = nil
+      Set vogal = (15.6, 46.5)
+    Estate "Posest Pekre"
+      Type hiša
+      Location (15.64, 46.59)
+      Size (10 + (2 * 3))
+      Price (((100 + 50) * 2) - (10 / 5))
+    Estate "Posest Maribor"
+      Type posest
+      OfferType najem
+      Location (15.8, 46.55)
+      Size 5
+      Price 100000
