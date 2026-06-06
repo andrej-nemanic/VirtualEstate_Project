@@ -36,7 +36,7 @@ Arhitektura sistema VirtualEstate temelji na troslojni zasnovi (odjemalec-strež
 ### 2.1 Tehnologije
 V projektu so uporabljene naslednje tehnologije:
 *   **Programski jeziki:** 
-    *   **JavaScript/TypeScript:** Uporabljen za razvoj spletne aplikacije (React) in zalednega sistema (Node.js).
+    *   **JavaScript:** Uporabljen za razvoj spletne aplikacije (React) in zalednega sistema (Node.js).
     *   **Kotlin:** Uporabljen za razvoj namizne aplikacije za upravljanje podatkov (DBMS).
 *   **Podatkovna baza:** **MongoDB Atlas** – dokumentna NoSQL podatkovna baza v oblaku, izbrana zaradi fleksibilnosti pri shranjevanju raznolikih podatkov o nepremičninah.
 *   **Komunikacijski protokoli:** 
