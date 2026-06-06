@@ -122,3 +122,7 @@ Podatkovna baza teče na MongoDB Atlas (oblak), dostop poteka prek povezave `mon
 #### 2.4.2. Zaledna spletna storitev (JavaScript)
 ![Razredni diagram JavaScript](images/finalDocumentation/javascript-razredi.png)
 
+## 3. DevOps (CI/CD)
+
+![Diagram DevOps](images/finalDocumentation/DevOps.png)
+
