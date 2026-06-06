@@ -1,6 +1,28 @@
-Ime projekta: VirtualEstate
+# Dokumentacija
 Člani skupine: Andrej Nemanič, Nik Šignjar Žilavec
 Povezava do repozitorija s kodo: https://github.com/andrej-nemanic/VirtualEstate_Project.git
 Ganttov diagram (od vzpostavitve projekta in do konca projekta (do 3. letnika))
 
 ![Gantt Chart](./images/finalDocumentation/gantt.png)
+
+## 1. Primeri uporabe
+
+Naša aplikacija rešuje problem iskanja nepremičnin na različnih spletnih straneh. Aplikacija strga podatke z različnih spletnih virov, te podatke nato pošlje v oddaljeno podatkovno bazo za nadaljno uporabo. S podatki upravljamo preko namizne aplikacije, ki deluje kot upravljalec podatkovne baze (DBMS). Ti podatki so na koncu uporabljeni v spletni aplikaciji, kjer se uporabnikom prikažejo na interaktivnem zemljevidu. Uporabnik lahko filtrira in išče podatke glede na svoje želje.
+
+### 1.1. Zajem podatkov
+
+En primer uporabe je zajem podatkov s spletnih virov. Uporabnik s pomočjo namizne aplikacije zajame vire, in jih s pomočjo spletne storitve pošlje v podatkovno bazo.
+
+![Sekvenčni diagram zajema podatkov](images/finalDocumentation/primer1.png)
+
+### 1.2 Upravljanje podatkov v podatkovni bazi
+
+Drugi primer uporabe je urejanje podatkov s pomočjo namizne aplikacije. Uporabnik uredi podatke, pošlje spremembe na spletno storitev, ki potem ažurira podatke v podatkovni bazi.
+
+![Sekvenčni diagram ažuriranja podatkov](images/finalDocumentation/primer2.png)
+
+### 1.3 Iskanje in filtriranje podatkov na zemljevidu 
+
+Še en primer uporabe je iskanje in filtriranje podatkov na spletni aplikacji. Aplikacija prejme filtre, in glede na te pridobi podatke iz podatkovne baze, ter jih prikaže na zemljevidu.
+
+![Sekvenčni diagram filtriranja podatkov](images/finalDocumentation/primer3.png)
