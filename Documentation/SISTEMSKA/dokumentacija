@@ -15,16 +15,96 @@ En primer uporabe je zajem podatkov s spletnih virov. Uporabnik s pomočjo namiz
 
 ![Sekvenčni diagram zajema podatkov](images/finalDocumentation/primer1.png)
 
-### 1.2 Upravljanje podatkov v podatkovni bazi
+### 1.2. Upravljanje podatkov v podatkovni bazi
 
 Drugi primer uporabe je urejanje podatkov s pomočjo namizne aplikacije. Uporabnik uredi podatke, pošlje spremembe na spletno storitev, ki potem ažurira podatke v podatkovni bazi.
 
 ![Sekvenčni diagram ažuriranja podatkov](images/finalDocumentation/primer2.png)
 
-### 1.3 Iskanje in filtriranje podatkov na zemljevidu 
+### 1.3. Iskanje in filtriranje podatkov na zemljevidu 
 
 Še en primer uporabe je iskanje in filtriranje podatkov na spletni aplikacji. Aplikacija prejme filtre, in glede na te pridobi podatke iz podatkovne baze, ter jih prikaže na zemljevidu.
 
 ![Sekvenčni diagram filtriranja podatkov](images/finalDocumentation/primer3.png)
 
 ## 2. Arhitektura programske rešitve
+
+![Diagram arhitekture](images/finalDocumentation/arhitektura.png)
+
+### 2.1. Uporabljene tehnologije
+
+#### 2.1.1. Programski jeziki
+- Kotlin (namizna aplikacija in DSL),
+- JavaScript (spletna spletna aplikacija, frontend in backend).
+
+#### 2.1.2. Podatkovna baza
+- MongoDB (dostop preko Mongoose ODM).
+
+#### 2.1.3. Protokoli TCP/IP sklada
+- HTTP/HTTPS (REST API),
+- WebSocket (sprotno posodabljanje).
+
+#### 2.1.4. Implementacija spletnega strežnika
+- Node.js,
+- Express ogrodje.
+
+#### 2.1.5. Prevajalnik
+- Kotlin se prevede v JVM kodo,
+- Za DSL napisan lasten prevajalnik.
+
+### 2.2. Knjižnice in API
+
+#### 2.2.1. Namizna aplikacija (Kotlin)
+- Compose Multiplatform (UI),
+- Retrofit2 (REST klient),
+- OkHttp (HTTP sloj),
+- Gson (JSON serializacija),
+- Kotlin Coroutines (asinhrono izvajanje),
+- Ksoup (strganje spletnih strani),
+- Kotlin Faker (testni podatki).
+
+#### 2.2.2. Zaledna spletna storitev (JavaScript / Node.js)
+- Express (spletno ogrodje),
+- Mongoose (ODM za MongoDB),
+- jsonwebtoken (avtentikacija JWT),
+- bcrypt (zgoščevanje gesel),
+- helmet (varnostne glave HTTP),
+- cors (nadzor dostopa med izvori),
+- express-rate-limit (omejevanje zahtevkov),
+- validator (validacija vhodnih podatkov),
+- socket.io (sprotno posodabljanje),
+- pino / morgan (beleženje),
+- dotenv (konfiguracija),
+- lru-cache (predpomnjenje).
+
+#### 2.2.3. Spletni odjemalec (JavaScript / React)
+- React (UI),
+- Vite (gradnja in razvojni strežnik),
+- Leaflet + react-leaflet (interaktivni zemljevid),
+- react-leaflet-cluster (združevanje točk),
+- leaflet-draw (risanje območij),
+- axios (HTTP klient),
+- socket.io-client (sprotno posodabljanje),
+- recharts (grafi),
+- react-router-dom (navigacija).
+
+#### 2.2.4. DSL (Kotlin)
+- Brez zunanjih knjižnic (čisti Kotlin).
+
+#### 2.2.5. Utemeljitev izbire
+Tehnologije smo izbrali glede na to, da v skupini že obvladamo Kotlin in JavaScript. Kotlin nam omogoča enoten jezik za namizno aplikacijo in DSL ter tipno varnost, Retrofit/OkHttp/Gson pa so uveljavljen in zanesljiv način za REST komunikacijo. Na zaledju smo izbrali Express in MongoDB (Mongoose), ker omogočata hiter razvoj REST storitve nad dokumentno bazo, ki dobro ustreza raznolikim podatkom o nepremičninah. Na odjemalcu smo uporabili React z Leafletom, ker je Leaflet brezplačen in zmogljiv za prikaz podatkov na interaktivnem zemljevidu.
+
+### 2.3. Komunikacija
+
+#### 2.3.1. Uporabljeni protokoli
+- REST (HTTP/HTTPS) med odjemalci in spletno storitvijo,
+- WebSocket (Socket.IO) za sprotne posodobitve,
+- HTTP GET pri strganju spletnih virov,
+- povezava MongoDB (TCP) med spletno storitvijo in bazo.
+
+#### 2.3.2. Odprta vrata
+- 3000 – spletna storitev (Express API + Socket.IO),
+- 5173 – spletni odjemalec (Vite).
+
+Podatkovna baza teče na MongoDB Atlas (oblak), dostop poteka prek povezave `mongodb+srv` (TLS), zato lokalnih vrat za bazo ne odpiramo.
+
