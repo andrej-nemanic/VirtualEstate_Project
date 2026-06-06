@@ -26,3 +26,5 @@ Drugi primer uporabe je urejanje podatkov s pomočjo namizne aplikacije. Uporabn
 Še en primer uporabe je iskanje in filtriranje podatkov na spletni aplikacji. Aplikacija prejme filtre, in glede na te pridobi podatke iz podatkovne baze, ter jih prikaže na zemljevidu.
 
 ![Sekvenčni diagram filtriranja podatkov](images/finalDocumentation/primer3.png)
+
+## 2. Arhitektura programske rešitve
