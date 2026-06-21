@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { propertyApi } from '../api/client.js';
 import { socket } from '../api/socket.js';
 import { OFFER_TYPES, SOURCE_OPTIONS, hasSize } from '../constants.js';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import { TableRowSkeleton } from '../components/Skeleton.jsx';
+
+const ADMIN_PAGE_SIZE = 10;
 
 const emptyProperty = {
   region: '',
@@ -31,6 +33,18 @@ export default function Admin() {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [sortKey, setSortKey] = useState(null);
+  const [sortDir, setSortDir] = useState('asc');
+
+  const onSort = (key) => {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
 
   const flash = (setter, msg) => {
     setter(msg);
@@ -140,26 +154,67 @@ export default function Admin() {
     setFormOpen(false);
   };
 
-  const filteredProperties = search.trim()
-    ? properties.filter(p => {
-        const q = search.toLowerCase();
-        return (
-          (p.region || '').toLowerCase().includes(q) ||
-          (p.city || '').toLowerCase().includes(q) ||
-          (p.neighborhood || '').toLowerCase().includes(q) ||
-          (p.propertyType || '').toLowerCase().includes(q) ||
-          (p.source || '').toLowerCase().includes(q)
-        );
-      })
-    : properties;
+  const filteredProperties = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const base = !q ? properties : properties.filter(p =>
+      (p.region || '').toLowerCase().includes(q) ||
+      (p.city || '').toLowerCase().includes(q) ||
+      (p.neighborhood || '').toLowerCase().includes(q) ||
+      (p.propertyType || '').toLowerCase().includes(q) ||
+      (p.source || '').toLowerCase().includes(q)
+    );
+    if (!sortKey) return base;
+    const dir = sortDir === 'asc' ? 1 : -1;
+    return [...base].sort((a, b) => {
+      const va = a[sortKey];
+      const vb = b[sortKey];
+      if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
+      const sa = (va ?? '').toString().toLowerCase();
+      const sb = (vb ?? '').toString().toLowerCase();
+      if (sa < sb) return -1 * dir;
+      if (sa > sb) return 1 * dir;
+      return 0;
+    });
+  }, [properties, search, sortKey, sortDir]);
+
+  useEffect(() => { setPage(1); }, [search, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredProperties.length / ADMIN_PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedProperties = useMemo(
+    () => filteredProperties.slice((currentPage - 1) * ADMIN_PAGE_SIZE, currentPage * ADMIN_PAGE_SIZE),
+    [filteredProperties, currentPage]
+  );
+
+  const sortIndicator = (key) => {
+    if (sortKey !== key) return null;
+    return (
+      <svg className="th-sort-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        {sortDir === 'asc'
+          ? <polyline points="18 15 12 9 6 15" />
+          : <polyline points="6 9 12 15 18 9" />}
+      </svg>
+    );
+  };
+
+  const SortableTh = ({ field, label, align = 'left' }) => (
+    <th>
+      <button
+        className="th-sort"
+        onClick={() => onSort(field)}
+        style={{ justifyContent: align === 'right' ? 'flex-end' : 'flex-start' }}
+        aria-sort={sortKey === field ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+      >
+        <span>{label}</span>
+        {sortIndicator(field)}
+      </button>
+    </th>
+  );
 
   return (
     <div className="container">
       <div className="page-header">
-        <div>
-          <h1>Admin vmesnik</h1>
-          <p className="subtitle">Upravljanje nepremičnin in podatkovnih virov.</p>
-        </div>
+        <h1>Upravitelj nepremičnin</h1>
         <span className="stats-pill"><strong>{properties.length}</strong> zapisov</span>
       </div>
 
@@ -265,18 +320,44 @@ export default function Admin() {
         <div className="card-header">
           <h2>Vse nepremičnine</h2>
           <div className="row" style={{ gap: 8, flex: 1, justifyContent: 'flex-end', maxWidth: 400 }}>
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="🔍 Iskanje po mestu, regiji, tipu…"
-            />
+            <div className="search-field" style={{ flex: 1 }}>
+              <svg
+                className="search-icon"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Iskanje po mestu, regiji, tipu…"
+              />
+            </div>
             <span className="badge muted">{filteredProperties.length}</span>
           </div>
         </div>
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Regija</th><th>Mesto / Naselje</th><th>Ponudba</th><th>Tip</th><th>Vir</th><th style={{ textAlign: 'right' }}>m²</th><th style={{ textAlign: 'right' }}>Cena</th><th></th></tr>
+              <tr>
+                <SortableTh field="region" label="Regija" />
+                <SortableTh field="city" label="Mesto / Naselje" />
+                <SortableTh field="offerType" label="Ponudba" />
+                <SortableTh field="propertyType" label="Tip" />
+                <SortableTh field="source" label="Vir" />
+                <SortableTh field="size" label="m²" align="right" />
+                <SortableTh field="price" label="Cena" align="right" />
+                <th></th>
+              </tr>
             </thead>
             <tbody>
               {loading && properties.length === 0 ? (
@@ -286,7 +367,7 @@ export default function Admin() {
                   <TableRowSkeleton columns={8} />
                 </>
               ) : (
-                filteredProperties.map(p => (
+                pagedProperties.map(p => (
                   <tr key={p._id}>
                     <td>{p.region}</td>
                     <td>{p.neighborhood ? `${p.neighborhood}, ${p.city}` : p.city}</td>
@@ -312,6 +393,33 @@ export default function Admin() {
             </tbody>
           </table>
         </div>
+        {filteredProperties.length > ADMIN_PAGE_SIZE && (
+          <nav className="pagination" aria-label="Paginacija nepremičnin">
+            <button
+              className="secondary sm"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              aria-label="Prejšnja stran"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+              Prejšnja
+            </button>
+            <span className="pagination-info" aria-live="polite">Stran <strong>{currentPage}</strong> od {totalPages}</span>
+            <button
+              className="secondary sm"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              aria-label="Naslednja stran"
+            >
+              Naslednja
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </nav>
+        )}
       </div>
 
       <ConfirmDialog

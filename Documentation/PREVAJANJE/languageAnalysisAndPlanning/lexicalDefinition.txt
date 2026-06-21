@@ -1,0 +1,32 @@
+Definicija leksemov
+
+Preskočimo:
+  presledki   ::= [ \t\r\n]+
+  komentar    ::= "//" [^\n]*
+
+Literali:
+  števila         ::= [0-9]+ ("." [0-9]+)?
+  nizi            ::= '"' [^"\n\r]* '"'
+  identifikatorji ::= L (L | [0-9] | "_")*
+                      L = [a-zA-Z_] | [À-ÖØ-öø-ſ]
+                 
+Rezervirane besede:
+  listings  estate  parcel  let  type  offerType  location  price  size
+  region  neighborhood  description  source  set
+  line  box  bend  fst  snd  true  false  nil
+
+Operatorji:
+  lbrace    ::= "{"
+  rbrace    ::= "}"
+  lparen    ::= "("
+  rparen    ::= ")"
+  semicolon ::= ";"
+  comma     ::= ","
+  assign    ::= "="
+  plus      ::= "+"
+  minus     ::= "-"
+  times     ::= "*"
+  divide    ::= "/"
+
+Konec datoteke:
+  eof

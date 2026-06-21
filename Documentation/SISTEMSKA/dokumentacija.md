@@ -1,0 +1,163 @@
+# VirtualEstate – Dokumentacija
+### Ime projekta: VirtualEstate
+### Člani skupine: Andrej Nemanič, Nik Šignjar Žilavec
+### Povezava do repozitorija s kodo: https://github.com/andrej-nemanic/VirtualEstate_Project.git
+### Ganttov diagram:
+
+![Gantt Chart](./images/finalDocumentation/gantt.png)
+
+## 1. Primeri uporabe
+
+Naša aplikacija rešuje problem iskanja nepremičnin na različnih spletnih straneh. Aplikacija strga podatke z različnih spletnih virov, te podatke nato pošlje v oddaljeno podatkovno bazo za nadaljnjo uporabo. S podatki upravljamo preko namizne aplikacije, ki deluje kot orodje za upravljanje podatkov. Ti podatki so na koncu uporabljeni v spletni aplikaciji, kjer se uporabnikom prikažejo na interaktivnem zemljevidu. Uporabnik lahko filtrira in išče podatke glede na svoje želje.
+
+### 1.1. Zajem podatkov
+
+En primer uporabe je zajem podatkov s spletnih virov (npr. nepremicnina.si in 24nep.si). Uporabnik s pomočjo namizne aplikacije zajame oglase in jih s pomočjo spletne storitve pošlje v podatkovno bazo.
+
+![Sekvenčni diagram zajema podatkov](images/finalDocumentation/primer1.png)
+
+### 1.2. Upravljanje podatkov v podatkovni bazi
+
+Drugi primer uporabe je urejanje podatkov s pomočjo namizne aplikacije. Uporabnik uredi podatke, pošlje spremembe na spletno storitev, ki potem ažurira podatke v podatkovni bazi.
+
+![Sekvenčni diagram ažuriranja podatkov](images/finalDocumentation/primer2.png)
+
+### 1.3. Iskanje in filtriranje podatkov na zemljevidu
+
+Še en primer uporabe je iskanje in filtriranje podatkov na spletni aplikaciji. Aplikacija prejme filtre in glede na te pridobi podatke iz podatkovne baze ter jih prikaže na zemljevidu.
+
+![Sekvenčni diagram filtriranja podatkov](images/finalDocumentation/primer3.png)
+
+## 2. Arhitektura programske rešitve
+
+![Diagram arhitekture](images/finalDocumentation/arhitektura.png)
+
+### 2.1. Uporabljene tehnologije
+
+#### 2.1.1. Programski jeziki
+- Kotlin (namizna aplikacija in DSL),
+- JavaScript (spletna aplikacija, frontend in backend).
+
+#### 2.1.2. Podatkovna baza
+- MongoDB (dostop preko Mongoose ODM).
+
+#### 2.1.3. Protokoli TCP/IP sklada
+- HTTP/HTTPS (REST API),
+- WebSocket (sprotno posodabljanje).
+
+#### 2.1.4. Implementacija spletnega strežnika
+- Node.js,
+- Express ogrodje.
+
+#### 2.1.5. Prevajalnik
+- Kotlin se prevede v JVM kodo,
+- Za DSL napisan lasten prevajalnik.
+
+#### 2.1.6. Interpreter
+- Node.js (motor V8) interpretira JavaScript,
+- DSL ima lasten evaluator (semantična analiza).
+
+### 2.2. Knjižnice in API
+
+#### 2.2.1. Namizna aplikacija (Kotlin)
+- Compose Multiplatform (UI),
+- Retrofit2 (REST klient),
+- OkHttp (HTTP sloj),
+- Gson (JSON serializacija),
+- Kotlin Coroutines (asinhrono izvajanje),
+- Ksoup (strganje spletnih strani),
+- Kotlin Faker (testni podatki).
+
+#### 2.2.2. Zaledna spletna storitev (JavaScript / Node.js)
+- Express (spletno ogrodje),
+- Mongoose (ODM za MongoDB),
+- jsonwebtoken (avtentikacija JWT),
+- bcrypt (zgoščevanje gesel),
+- helmet (varnostne glave HTTP),
+- cors (nadzor dostopa med izvori),
+- express-rate-limit (omejevanje zahtevkov),
+- validator (validacija vhodnih podatkov),
+- socket.io (sprotno posodabljanje),
+- pino / morgan (beleženje),
+- dotenv (konfiguracija),
+- lru-cache (predpomnjenje).
+
+#### 2.2.3. Spletni odjemalec (JavaScript / React)
+- React (UI),
+- Vite (gradnja in razvojni strežnik),
+- Leaflet + react-leaflet (interaktivni zemljevid),
+- react-leaflet-cluster (združevanje točk),
+- leaflet-draw (risanje območij),
+- axios (HTTP klient),
+- socket.io-client (sprotno posodabljanje),
+- recharts (grafi),
+- react-router-dom (navigacija).
+
+#### 2.2.4. DSL (Kotlin)
+- Brez zunanjih knjižnic (čisti Kotlin); samostojno orodje, ki generira GeoJSON.
+
+#### 2.2.5. Zunanji API-ji
+- Nominatim (OpenStreetMap) – geokodiranje naslovov v koordinate (primarni vir),
+- Photon (Komoot) – geokodiranje (rezervni vir),
+- OpenStreetMap ploščice – podlaga interaktivnega zemljevida (Leaflet).
+
+#### 2.2.6. Utemeljitev izbire
+Tehnologije smo izbrali glede na to, da v skupini že obvladamo Kotlin in JavaScript. Kotlin nam omogoča enoten jezik za namizno aplikacijo in DSL ter tipno varnost, Retrofit/OkHttp/Gson pa so uveljavljen in zanesljiv način za REST komunikacijo. Na zaledju smo izbrali Express in MongoDB (Mongoose), ker omogočata hiter razvoj REST storitve nad dokumentno bazo, ki dobro ustreza raznolikim podatkom o nepremičninah. Na odjemalcu smo uporabili React z Leafletom, ker je Leaflet brezplačen in zmogljiv za prikaz podatkov na interaktivnem zemljevidu.
+
+### 2.3. Komunikacija
+
+#### 2.3.1. Uporabljeni protokoli
+- REST (HTTP/HTTPS) med odjemalci in spletno storitvijo,
+- WebSocket (Socket.IO) za sprotne posodobitve,
+- HTTP GET pri strganju spletnih virov,
+- povezava MongoDB (TCP) med spletno storitvijo in bazo,
+- HTTPS klici na zunanji geokodirni storitvi (Nominatim, Photon).
+
+#### 2.3.2. Odprta vrata
+- 22 – SSH dostop do virtualne naprave (administracija),
+- 3000 – spletna storitev (Express API + Socket.IO),
+- 5173 – spletni odjemalec (Vite),
+- 9000 – webhook listener za samodejni deploy (CI/CD).
+
+Podatkovna baza teče na MongoDB Atlas (oblak), dostop poteka prek povezave `mongodb+srv` (TLS), zato lokalnih vrat za bazo ne odpiramo.
+
+### 2.4. Razredni diagram
+
+#### 2.4.1. Namizna aplikacija (Kotlin)
+![Razredni diagram Kotlin](images/finalDocumentation/kotlin-razredi.png)
+
+#### 2.4.2. Zaledna spletna storitev (JavaScript)
+![Razredni diagram JavaScript](images/finalDocumentation/javascript-razredi.png)
+
+## 3. DevOps (CI/CD)
+
+![Diagram DevOps](images/finalDocumentation/DevOps.png)
+
+## 4. Varnost programske rešitve
+
+### 4.1. Požarni zid
+- Pred virtualno napravo na Azure deluje Network Security Group (NSG) kot požarni zid.
+- Odprta so samo nujna vhodna vrata: 22 (SSH), 3000 (spletna storitev), 5173 (spletni odjemalec), 9000 (webhook).
+- Vsa ostala vrata so privzeto zaprta.
+
+### 4.2. Omejitve uporabnikov
+- Omejevanje prijav z express-rate-limit (največ 10 poskusov v 15 minutah) — zaščita pred ugibanjem gesel.
+- Preverjanje moči gesla (najmanj 8 znakov, vsaj ena črka in ena številka).
+- Validacija e-pošte in identifikatorjev (ObjectId) pred obdelavo zahteve.
+- Omejitev velikosti telesa zahteve (1 MB).
+
+### 4.3. Varnostne vloge uporabnikov
+- Avtentikacija z žetoni JWT (`Authorization: Bearer`, veljavnost 24 ur).
+- Dve vlogi: navadni uporabnik in administrator (`isAdmin`).
+- Samo administrator: ustvarjanje, urejanje in brisanje nepremičnin ter pregled vseh uporabnikov.
+- Administrator ali lastnik računa: pregled in urejanje lastnega profila.
+- Vlogo `isAdmin` lahko spremeni samo administrator.
+
+### 4.4. Varovanje podatkov
+- Gesla so shranjena zgoščeno z bcrypt (sol, 10 krogov); geslo se nikoli ne vrne v odgovoru.
+- Varnostne glave HTTP (helmet) in CORS z omejenimi dovoljenimi metodami (GET, POST, PUT, DELETE).
+- Šifrirana povezava do baze MongoDB Atlas (TLS, `mongodb+srv`, avtentikacija SCRAM-SHA-256).
+- Skrivnosti (`JWT_SECRET`, `DATABASE_URL`) so shranjene v `.env`, izven repozitorija.
+- Webhook za nameščanje je zaščiten s skrivnim žetonom (`X-Webhook-Token`).
+- Centralno obravnavanje napak ne razkriva internih podrobnosti v produkciji.
+

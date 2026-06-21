@@ -1,0 +1,61 @@
+Začetni simbol: Program.  $ = konec vnosa
+
+FIRST:
+
+Program          { listings }
+ListingsDecl     { listings }
+ListingsBody     { let, estate, ε }
+ListingsStmt     { let, estate }
+EstateDecl       { estate }
+EstateBody       { type, offerType, location, price, size, region, neighborhood,
+                   description, source, set, parcel, let, ε }
+EstateStmt       { type, offerType, location, price, size, region, neighborhood,
+                   description, source, set, parcel, let }
+LetDecl          { let }
+LetValue         { lparen, minus, plus, number, string, identifier, true, false, nil, fst, snd }
+SetStmt          { set }
+SetValue         { lparen, minus, plus, number, string, identifier, true, false, nil, fst, snd }
+ParcelDecl       { parcel }
+ParcelBody       { line, box, bend, ε }
+GeoCommandsTail  { semicolon, ε }
+GeoCommand       { line, box, bend }
+PointExpr        { lparen, identifier }
+Point            { lparen }
+Expr             { minus, plus, number, string, identifier, true, false, nil, fst, snd, lparen }
+Additive         { minus, plus, number, string, identifier, true, false, nil, fst, snd, lparen }
+Additive'        { plus, minus, ε }
+Multiplicative   { minus, plus, number, string, identifier, true, false, nil, fst, snd, lparen }
+Multiplicative'  { times, divide, ε }
+Unary            { minus, plus, number, string, identifier, true, false, nil, fst, snd, lparen }
+Primary          { number, string, identifier, true, false, nil, fst, snd, lparen }
+
+FOLLOW:
+
+Program          { $ }
+ListingsDecl     { eof }
+ListingsBody     { rbrace }
+ListingsStmt     { let, estate, rbrace }
+EstateDecl       { let, estate, rbrace }
+EstateBody       { rbrace }
+EstateStmt       { type, offerType, location, price, size, region, neighborhood,
+                   description, source, set, parcel, let, rbrace }
+LetDecl          { type, offerType, location, price, size, region, neighborhood,
+                   description, source, set, parcel, let, estate, rbrace }
+LetValue         { semicolon }
+SetStmt          { type, offerType, location, price, size, region, neighborhood,
+                   description, source, set, parcel, let, rbrace }
+SetValue         { rparen }
+ParcelDecl       { type, offerType, location, price, size, region, neighborhood,
+                   description, source, set, parcel, let, rbrace }
+ParcelBody       { rbrace }
+GeoCommandsTail  { rbrace }
+GeoCommand       { semicolon, rbrace }
+PointExpr        { semicolon, comma, rparen }
+Point            { semicolon, comma, rparen }
+Expr             { semicolon, comma, rparen }
+Additive         { semicolon, comma, rparen }
+Additive'        { semicolon, comma, rparen }
+Multiplicative   { plus, minus, semicolon, comma, rparen }
+Multiplicative'  { plus, minus, semicolon, comma, rparen }
+Unary            { times, divide, plus, minus, semicolon, comma, rparen }
+Primary          { times, divide, plus, minus, semicolon, comma, rparen }

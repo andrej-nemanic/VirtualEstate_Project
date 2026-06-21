@@ -7,10 +7,12 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
+    // Privzeto kaže na oddaljeni (deployan) backend. Za lokalni razvoj nastavi
+    // spremenljivko okolja VIRTUALESTATE_API_URL=http://localhost:3000/api/
     private val BASE_URL: String = System.getenv("VIRTUALESTATE_API_URL")
         ?.takeIf { it.isNotBlank() }
         ?.let { if (it.endsWith("/")) it else "$it/" }
-        ?: "http://localhost:3000/api/"
+        ?: "http://68.210.138.100:3000/api/"
 
     private val okHttp: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(HttpLoggingInterceptor().apply {
