@@ -1,0 +1,63 @@
+Program ::= ListingsDecl eof;
+
+ListingsDecl ::= listings string lbrace ListingsBody rbrace;
+ListingsBody ::= ListingsStmt ListingsBody | ε;
+ListingsStmt ::= LetDecl | EstateDecl;
+
+EstateDecl ::= estate string lbrace EstateBody rbrace;
+EstateBody ::= EstateStmt EstateBody | ε;
+EstateStmt ::= type identifier semicolon
+             | offerType identifier semicolon
+             | location PointExpr semicolon
+             | price Expr semicolon
+             | size Expr semicolon
+             | region string semicolon
+             | neighborhood string semicolon
+             | description string semicolon
+             | source string semicolon
+             | SetStmt
+             | ParcelDecl
+             | LetDecl;
+
+LetDecl ::= let identifier assign LetValue semicolon;
+LetValue ::= Point | Expr;
+
+SetStmt ::= set lparen string comma SetValue rparen semicolon;
+SetValue ::= Point | Expr;
+
+ParcelDecl ::= parcel lbrace ParcelBody rbrace;
+ParcelBody ::= GeoCommand GeoCommandsTail | ε;
+GeoCommandsTail ::= semicolon GeoCommand GeoCommandsTail
+                  | semicolon
+                  | ε;
+
+GeoCommand ::= line lparen PointExpr comma PointExpr rparen
+             | box lparen PointExpr comma PointExpr rparen
+             | bend lparen PointExpr comma PointExpr comma Expr rparen;
+
+PointExpr ::= Point | identifier;
+Point ::= lparen Expr comma Expr rparen;
+
+Expr ::= Additive;
+
+Additive ::= Multiplicative Additive';
+Additive' ::= plus Multiplicative Additive'
+            | minus Multiplicative Additive'
+            | ε;
+
+Multiplicative ::= Unary Multiplicative';
+Multiplicative' ::= times Unary Multiplicative'
+                  | divide Unary Multiplicative'
+                  | ε;
+
+Unary ::= minus Primary | plus Primary | Primary;
+
+Primary ::= number
+          | string
+          | identifier
+          | true
+          | false
+          | nil
+          | fst lparen Expr rparen
+          | snd lparen Expr rparen
+          | lparen Expr rparen;

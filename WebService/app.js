@@ -1,5 +1,14 @@
 require('dotenv').config();
 
+// Na nekaterih Windows sistemih Node (c-ares) ne prebere sistemskih DNS strežnikov
+// in pade na 127.0.0.1, kjer ni DNS strežnika -> SRV poizvedba za mongodb+srv:// pade
+// z ECONNREFUSED. Samo v tem primeru preusmerimo na javni DNS; na deploy okolju,
+// kjer je resolver pravilno nastavljen, se to ne sproži.
+var dns = require('dns');
+if (dns.getServers().some(function (s) { return s === '127.0.0.1' || s === '::1'; })) {
+    dns.setServers(['8.8.8.8', '1.1.1.1']);
+}
+
 // MongoDB Atlas driver (SCRAM-SHA-256) potrebuje globalThis.crypto v Node 18,
 // kjer Web Crypto API privzeto ni izpostavljen. V Node 19+ ni potrebno.
 if (!global.crypto) {
