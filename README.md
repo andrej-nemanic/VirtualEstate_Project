@@ -1,10 +1,10 @@
 # VirtualEstate — digitalni dvojček nepremičninskega trga
 
-**VirtualEstate** je študentski projekt, ki združuje **podatke iz javnih nepremičninskih oglasnikov** (web scraping) in **ročno vnesene podatke** v enotno bazo, jih vizualizira na zemljevidu in v grafih ter omogoča realnočasovno spremljanje sprememb.
+**VirtualEstate** je študentski projekt, ki združuje podatke iz javnih nepremičninskih oglasnikov (web scraping) in ročno vnesene podatke v enotno bazo, jih vizualizira na zemljevidu in v grafih ter omogoča realnočasovno spremljanje sprememb.
 
-> 📖 **Celotna dokumentacija je v [Wikiju projekta](https://github.com/andrej-nemanic/VirtualEstate_Project/wiki).**
+Celotna dokumentacija je v [Wikiju projekta](https://github.com/andrej-nemanic/VirtualEstate_Project/wiki).
 
-## 📚 Dokumentacija (Wiki)
+## Dokumentacija (Wiki)
 
 | Sklop | Vsebina |
 |---|---|
@@ -15,7 +15,7 @@
 
 Za pregled vseh strani glej [kazalo dokumentacije](https://github.com/andrej-nemanic/VirtualEstate_Project/wiki/Documentation) ali [domačo stran Wikija](https://github.com/andrej-nemanic/VirtualEstate_Project/wiki).
 
-## 🧩 Komponente sistema
+## Komponente sistema
 
 | Komponenta | Tehnologija | Vloga |
 |---|---|---|
@@ -23,7 +23,7 @@ Za pregled vseh strani glej [kazalo dokumentacije](https://github.com/andrej-nem
 | **WebClient** | React, Vite, Leaflet, Recharts | Spletni vmesnik za pregled in administracijo |
 | **DesktopApplication** | Kotlin, Jetpack Compose | Namizna aplikacija za upravljanje baze, scraping in generiranje podatkov |
 
-## 🚀 Hitri zagon (Docker Compose)
+## Hitri zagon (Docker Compose)
 
 ```bash
 git clone https://github.com/andrej-nemanic/VirtualEstate_Project.git
@@ -41,9 +41,9 @@ Po zagonu:
 - **WebClient**: http://localhost:5173
 - **WebService API**: http://localhost:3000
 
-> ⚠️ `docker-compose.yml` zažene le `web-service` in `web-client`. **MongoDB ni vključen** — nastaviti moraš `DATABASE_URL` (lokalni Mongo ali brezplačni MongoDB Atlas). Podrobnosti in ročna namestitev so v [navodilih za namestitev](https://github.com/andrej-nemanic/VirtualEstate_Project/wiki/Namestitev-in-prijava).
+> **Opomba:** `docker-compose.yml` zažene le `web-service` in `web-client`. MongoDB ni vključen — nastaviti moraš `DATABASE_URL` (lokalni Mongo ali brezplačni MongoDB Atlas). Podrobnosti in ročna namestitev so v [navodilih za namestitev](https://github.com/andrej-nemanic/VirtualEstate_Project/wiki/Namestitev-in-prijava).
 
-## 📁 Struktura repozitorija
+## Struktura repozitorija
 
 ```
 VirtualEstate_Project/
@@ -56,14 +56,14 @@ VirtualEstate_Project/
 └── README.md
 ```
 
-## 🔗 Povezave
+## Povezave
 
 - **Wiki**: https://github.com/andrej-nemanic/VirtualEstate_Project/wiki
 - **Vir Wikija** (samodejna sinhronizacija prek CircleCI): https://github.com/NikSignjarZilavec/VirtualEstate-Wiki
 - **Issue tracker**: Jira (SCRUM)
-- **Deployment**: Microsoft Azure · containerji na DockerHub
+- **Deployment**: Microsoft Azure; containerji na DockerHub
 
-## 👥 Avtorji
+## Avtorja
 
 - **Nik Signjar Zilavec** — desktop aplikacija, spletni vmesnik, scraping, generator, UI/UX
 - **Andrej Nemanič** — spletna storitev, baza, deployment, dokumentacija
