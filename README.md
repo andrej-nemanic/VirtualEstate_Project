@@ -13,7 +13,7 @@ Celotna dokumentacija je v [Wikiju projekta](https://github.com/andrej-nemanic/V
 | [3. Primeri uporabe](https://github.com/andrej-nemanic/VirtualEstate_Project/wiki/Primeri-uporabe) | Pet ključnih scenarijev z navodili po korakih |
 | [4. Izvedene lastnosti](https://github.com/andrej-nemanic/VirtualEstate_Project/wiki/Izvedene-lastnosti) | Podroben opis implementiranih funkcionalnosti |
 
-Za pregled vseh strani glej [kazalo dokumentacije](https://github.com/andrej-nemanic/VirtualEstate_Project/wiki/Documentation) ali [domačo stran Wikija](https://github.com/andrej-nemanic/VirtualEstate_Project/wiki).
+Za pregled vseh strani glejte [kazalo dokumentacije](https://github.com/andrej-nemanic/VirtualEstate_Project/wiki/Documentation) ali [domačo stran Wikija](https://github.com/andrej-nemanic/VirtualEstate_Project/wiki).
 
 ## Komponente sistema
 
@@ -29,9 +29,9 @@ Za pregled vseh strani glej [kazalo dokumentacije](https://github.com/andrej-nem
 git clone https://github.com/andrej-nemanic/VirtualEstate_Project.git
 cd VirtualEstate_Project
 
-# Nastavi okoljske spremenljivke (compose ju naloži prek env_file):
+# Nastavite okoljske spremenljivke (compose ju naloži prek env_file):
 #   WebService/.env  ->  DATABASE_URL, JWT_SECRET
-cp WebService/.env.example WebService/.env   # nato uredi vrednosti
+cp WebService/.env.example WebService/.env   # nato uredite vrednosti
 
 docker compose up --build
 ```
@@ -41,7 +41,7 @@ Po zagonu:
 - **WebClient**: http://localhost:5173
 - **WebService API**: http://localhost:3000
 
-> **Opomba:** `docker-compose.yml` zažene le `web-service` in `web-client`. MongoDB ni vključen — nastaviti moraš `DATABASE_URL` (lokalni Mongo ali brezplačni MongoDB Atlas). Podrobnosti in ročna namestitev so v [navodilih za namestitev](https://github.com/andrej-nemanic/VirtualEstate_Project/wiki/Namestitev-in-prijava).
+> **Opomba:** `docker-compose.yml` zažene le `web-service` in `web-client`. MongoDB ni vključen — nastaviti morate `DATABASE_URL` (lokalni Mongo ali brezplačni MongoDB Atlas). Podrobnosti in ročna namestitev so v [navodilih za namestitev](https://github.com/andrej-nemanic/VirtualEstate_Project/wiki/Namestitev-in-prijava).
 
 ## Struktura repozitorija
 
